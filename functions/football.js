@@ -13,9 +13,16 @@ exports.handler = async (event) => {
         if (type === 'highlights') {
             const term = encodeURIComponent(`${queryParam} official highlights`);
             const ytUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&order=relevance&type=video&q=${term}&key=${YT_KEY}`;
+
             const res = await fetch(ytUrl);
             const data = await res.json();
-            return { statusCode: 200, headers, body: JSON.stringify(data.items || []) };
+
+            // If data.items is undefined, return empty array to prevent frontend crash
+            return {
+                statusCode: 200,
+                headers,
+                body: JSON.stringify(data.items || [])
+            };
         }
 
         if (type === 'news') {

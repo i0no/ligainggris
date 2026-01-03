@@ -13,6 +13,7 @@ const PAGE_SIZE = 6;
 
 async function init() {
     try {
+        console.log("App Initializing...");
         const [s, r, f, n] = await Promise.all([
             fetch('/api/football?type=standings').then(res => res.json()),
                                                fetch('/api/football?type=results').then(res => res.json()),
@@ -23,37 +24,61 @@ async function init() {
         if (s.standings) renderStandings(s.standings[0].table);
         if (n && n.length > 0) renderNews(n);
 
-        if (r.matches) {
+        if (r.matches && r.matches.length > 0) {
             const maxGW = Math.max(...r.matches.map(m => m.matchday));
             allMatches = r.matches.filter(m => m.matchday === maxGW);
+            console.log(`Found ${allMatches.length} matches for GW ${maxGW}`);
             renderResults(allMatches, maxGW);
-            loadVideoPage(0); // Load Page 1 immediately
+
+            // CRITICAL: Ensure allMatches is populated before calling this
+            await loadVideoPage(0);
+        } else {
+            UI.videos.innerHTML = "<div class='loader'>No recent matches found to show highlights.</div>";
         }
 
         if (f.matches) {
             const nextGW = Math.min(...f.matches.map(m => m.matchday));
             renderFixtures(f.matches.filter(m => m.matchday === nextGW), nextGW);
         }
-    } catch (e) { console.error("App failed to start", e); }
+    } catch (e) {
+        console.error("Global Init Error:", e);
+        UI.videos.innerHTML = "<div class='loader'>Error connecting to API. Check your keys.</div>";
+    }
 }
 
 async function loadVideoPage(pageNumber) {
-    UI.videos.innerHTML = `<div class="loader">FETCHING PAGE ${pageNumber + 1}...</div>`;
+    UI.videos.innerHTML = `<div class="loader">FETCHING HIGHLIGHTS...</div>`;
 
     const start = pageNumber * PAGE_SIZE;
     const pageMatches = allMatches.slice(start, start + PAGE_SIZE);
 
-    const videoResults = await Promise.all(pageMatches.map(match => {
-        const query = `${match.homeTeam.shortName} vs ${match.awayTeam.shortName}`;
-        return fetch(`/api/football?type=highlights&q=${encodeURIComponent(query)}`).then(res => res.json());
-    }));
+    try {
+        const videoResults = await Promise.all(pageMatches.map(async (match) => {
+            const query = `${match.homeTeam.shortName} vs ${match.awayTeam.shortName}`;
+            const res = await fetch(`/api/football?type=highlights&q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            return data.length > 0 ? data[0] : null;
+        }));
 
-    UI.videos.innerHTML = "";
-    videoResults.forEach(items => {
-        if (items && items.length > 0) renderVideoCard(items[0]);
-    });
+        UI.videos.innerHTML = "";
+        let foundAny = false;
+
+        videoResults.forEach(video => {
+            if (video) {
+                renderVideoCard(video);
+                foundAny = true;
+            }
+        });
+
+        if (!foundAny) {
+            UI.videos.innerHTML = "<div class='loader'>YouTube API Quota Exceeded or No Videos Found.</div>";
+        }
 
         renderPagination(pageNumber);
+    } catch (err) {
+        console.error("Video Load Error:", err);
+        UI.videos.innerHTML = "<div class='loader'>Failed to load videos.</div>";
+    }
 }
 
 function renderPagination(activePage) {
@@ -92,10 +117,14 @@ function renderVideoCard(v) {
         UI.player.innerHTML = `<iframe src="https://www.youtube.com/embed/${v.id.videoId}?autoplay=1" allowfullscreen></iframe>`;
         UI.modal.style.display = 'flex';
     };
-    div.innerHTML = `<img src="${v.snippet.thumbnails.high.url}"><div class="v-title">${v.snippet.title}</div>`;
+    div.innerHTML = `
+    <img src="${v.snippet.thumbnails.high.url}" onerror="this.src='https://placehold.co/400x225?text=No+Thumbnail'">
+    <div class="v-title">${v.snippet.title}</div>
+    `;
     UI.videos.appendChild(div);
 }
 
+// Sidebars (Locked)
 function renderResults(m, g) { UI.results.innerHTML = `<div class="gw-label">GW ${g} Results</div>` + m.map(match => `<div class="item"><div class="team"><img src="${match.homeTeam.crest}" class="crest-sm"> ${match.homeTeam.shortName}</div><span class="score">${match.score.fullTime.home}-${match.score.fullTime.away}</span><div class="team">${match.awayTeam.shortName} <img src="${match.awayTeam.crest}" class="crest-sm"></div></div>`).join(''); }
 function renderFixtures(m, g) { UI.fixtures.innerHTML = `<div class="gw-label">Next GW ${g}</div>` + m.map(match => `<div class="item"><div class="team"><img src="${match.homeTeam.crest}" class="crest-sm"> ${match.homeTeam.shortName}</div><span class="date">${new Date(match.utcDate).toLocaleDateString([], {day:'numeric', month:'short'})}</span><div class="team">${match.awayTeam.shortName} <img src="${match.awayTeam.crest}" class="crest-sm"></div></div>`).join(''); }
 function renderStandings(d) { UI.standings.innerHTML = d.map(r => `<tr><td>${r.position}</td><td class="team-cell"><img src="${r.team.crest}" class="crest-sm">${r.team.shortName}</td><td>${r.points}</td></tr>`).join(''); }
