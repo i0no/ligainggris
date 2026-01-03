@@ -7,18 +7,18 @@ const UI = {
     player: document.getElementById('video-player')
 };
 
-// Updated list: Removed broken kavin.rocks, added stable alternates
+// Switching to Invidious instances for better stability against black screens
 const INSTANCES = [
-    "https://piped.video",
-"https://piped.projectsegfau.lt",
-"https://piped.mha.fi",
-"https://yewtu.be"
+    "https://yewtu.be",
+"https://vid.puffyan.us",
+"https://inv.vern.cc",
+"https://invidious.nerdvpn.de"
 ];
 
-let bestInstance = "https://piped.video";
+let bestInstance = "https://yewtu.be";
 
 async function checkServerHealth() {
-    // We try to fetch a small resource to see if the server is alive
+    // We race the servers to find the one that responds fastest
     const checks = INSTANCES.map(url =>
     fetch(url, { method: 'HEAD', mode: 'no-cors' })
     .then(() => url)
@@ -26,13 +26,12 @@ async function checkServerHealth() {
     );
 
     const results = await Promise.all(checks);
-    // Filter out the nulls (failed servers) and pick the first working one
-    bestInstance = results.find(r => r !== null) || "https://piped.video";
-    console.log("Active Instance Set To:", bestInstance);
+    bestInstance = results.find(r => r !== null) || "https://yewtu.be";
+    console.log("Locked stable instance:", bestInstance);
 }
 
 async function init() {
-    await checkServerHealth(); // Run this first
+    await checkServerHealth();
 
     try {
         const [s, r, f] = await Promise.all([
@@ -58,7 +57,7 @@ async function init() {
 }
 
 async function fetchMatchHighlights(matches) {
-    UI.videos.innerHTML = `<div class="loader">Syncing Highlights...</div>`;
+    UI.videos.innerHTML = `<div class="loader">Fetching Highlights...</div>`;
     const topMatches = matches.slice(0, 6);
 
     const videoResults = await Promise.all(topMatches.map(match => {
@@ -76,8 +75,8 @@ function renderVideoCard(v) {
     const div = document.createElement('div');
     div.className = 'v-card';
     div.onclick = () => {
-        // Embed logic using the best discovered instance
-        UI.player.innerHTML = `<iframe src="${bestInstance}/embed/${v.id.videoId}?autoplay=1" allowfullscreen></iframe>`;
+        // Invidious uses /embed/ just like YouTube, but without the geo-blocks
+        UI.player.innerHTML = `<iframe src="${bestInstance}/embed/${v.id.videoId}?autoplay=1&local=true" allowfullscreen></iframe>`;
         UI.modal.style.display = 'flex';
     };
     div.innerHTML = `
@@ -87,7 +86,6 @@ function renderVideoCard(v) {
     UI.videos.appendChild(div);
 }
 
-// ... renderResults, renderFixtures, renderStandings stay exactly as they were ...
 function renderResults(matches, gw) {
     UI.results.innerHTML = `<div class="gw-label">Gameweek ${gw} Results</div>` +
     matches.map(m => `
