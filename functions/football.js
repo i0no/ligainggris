@@ -5,7 +5,7 @@ exports.handler = async (event) => {
     const ENDPOINTS = {
         standings: 'https://api.football-data.org/v4/competitions/PL/standings',
         results: 'https://api.football-data.org/v4/competitions/PL/matches?status=FINISHED',
-        fixtures: 'https://api.football-data.org/v4/competitions/PL/matches?status=SCHEDULED&limit=10',
+        fixtures: 'https://api.football-data.org/v4/competitions/PL/matches?status=SCHEDULED',
         highlights: 'https://www.scorebat.com/video-api/v3/'
     };
 
@@ -17,7 +17,7 @@ exports.handler = async (event) => {
 
         return {
             statusCode: 200,
-            headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=120" },
+            headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60" },
             body: JSON.stringify(data)
         };
     } catch (e) {

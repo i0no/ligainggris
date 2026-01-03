@@ -18,35 +18,44 @@ async function init() {
 
         if (s.standings) renderStandings(s.standings[0].table);
 
-        // FIX: Find the LATEST matchday by sorting descending
+        // 1. LATEST RESULTS (Highest completed matchday)
         if (r.matches && r.matches.length > 0) {
-            const sortedMatches = r.matches.sort((a, b) => b.matchday - a.matchday);
-            const latestGW = sortedMatches[0].matchday;
-            const latestResults = sortedMatches.filter(m => m.matchday === latestGW);
-            renderResults(latestResults, latestGW);
+            const lastGW = Math.max(...r.matches.map(m => m.matchday));
+            const latestResults = r.matches.filter(m => m.matchday === lastGW);
+            renderResults(latestResults, lastGW);
         }
 
-        if (f.matches) renderFixtures(f.matches);
+        // 2. NEXT FIXTURES (Lowest scheduled matchday)
+        if (f.matches && f.matches.length > 0) {
+            const nextGW = Math.min(...f.matches.map(m => m.matchday));
+            const nextFixtures = f.matches.filter(m => m.matchday === nextGW);
+            renderFixtures(nextFixtures, nextGW);
+        }
+
         if (v.response) renderVideos(v.response);
     } catch (e) { console.error("Init Error:", e); }
 }
 
 function renderResults(matches, gw) {
-    let html = `<div class="gw-label">Gameweek ${gw} - Latest Results</div>`;
-    html += matches.map(m => `
+    UI.results.innerHTML = `<div class="gw-label">Gameweek ${gw} Results</div>` +
+    matches.map(m => `
     <div class="item">
-    <div class="team">
-    <img src="${m.homeTeam.crest}" class="crest-sm">
-    <span>${m.homeTeam.shortName}</span>
-    </div>
+    <div class="team"><img src="${m.homeTeam.crest}" class="crest-sm"> ${m.homeTeam.shortName}</div>
     <span class="score">${m.score.fullTime.home} - ${m.score.fullTime.away}</span>
-    <div class="team">
-    <span>${m.awayTeam.shortName}</span>
-    <img src="${m.awayTeam.crest}" class="crest-sm">
-    </div>
+    <div class="team">${m.awayTeam.shortName} <img src="${m.awayTeam.crest}" class="crest-sm"></div>
     </div>
     `).join('');
-    UI.results.innerHTML = html;
+}
+
+function renderFixtures(matches, gw) {
+    UI.fixtures.innerHTML = `<div class="gw-label">Gameweek ${gw} Fixtures</div>` +
+    matches.map(m => `
+    <div class="item fixture">
+    <div class="team"><img src="${m.homeTeam.crest}" class="crest-sm"> ${m.homeTeam.shortName}</div>
+    <span class="date">${new Date(m.utcDate).toLocaleDateString([], {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</span>
+    <div class="team">${m.awayTeam.shortName} <img src="${m.awayTeam.crest}" class="crest-sm"></div>
+    </div>
+    `).join('');
 }
 
 function renderStandings(data) {
@@ -59,18 +68,9 @@ function renderStandings(data) {
     `).join('');
 }
 
-function renderFixtures(matches) {
-    UI.fixtures.innerHTML = matches.map(m => `
-    <div class="item fixture">
-    <div class="team"><img src="${m.homeTeam.crest}" class="crest-sm"> ${m.homeTeam.shortName}</div>
-    <span class="vs">vs</span>
-    <div class="team">${m.awayTeam.shortName} <img src="${m.awayTeam.crest}" class="crest-sm"></div>
-    </div>
-    `).join('');
-}
-
 function renderVideos(videos) {
-    const pl = videos.filter(v => v.competition.toUpperCase().includes("PREMIER LEAGUE")).slice(0, 8);
+    // Filter by 'Premier League' and ensure we only get the latest 6 for speed
+    const pl = videos.filter(v => v.competition.toUpperCase().includes("PREMIER LEAGUE")).slice(0, 6);
     UI.videos.innerHTML = pl.map(v => `
     <div class="v-card" onclick="playVideo('${btoa(v.videos[0].embed)}')">
     <img src="${v.thumbnail}" loading="lazy">
