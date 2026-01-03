@@ -7,58 +7,58 @@ const UI = {
     player: document.getElementById('video-player')
 };
 
-// Piped and Invidious instances for maximum reliability
+// Updated list: Removed broken kavin.rocks, added stable alternates
 const INSTANCES = [
-    "https://pipedapi.kavin.rocks",
-"https://api.piped.projectsegfau.lt",
-"https://inv.vern.cc",
+    "https://piped.video",
+"https://piped.projectsegfau.lt",
+"https://piped.mha.fi",
 "https://yewtu.be"
 ];
 
 let bestInstance = "https://piped.video";
 
 async function checkServerHealth() {
-    console.log("Checking server health...");
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-
+    // We try to fetch a small resource to see if the server is alive
     const checks = INSTANCES.map(url =>
-    fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal })
-    .then(() => url.replace('api.', ''))
+    fetch(url, { method: 'HEAD', mode: 'no-cors' })
+    .then(() => url)
     .catch(() => null)
     );
 
     const results = await Promise.all(checks);
+    // Filter out the nulls (failed servers) and pick the first working one
     bestInstance = results.find(r => r !== null) || "https://piped.video";
-    console.log("Best server found:", bestInstance);
+    console.log("Active Instance Set To:", bestInstance);
 }
 
 async function init() {
-    // Check health and fetch data simultaneously
-    const [_, s, r, f] = await Promise.all([
-        checkServerHealth(),
-                                           fetch('/api/football?type=standings').then(res => res.json()),
-                                           fetch('/api/football?type=results').then(res => res.json()),
-                                           fetch('/api/football?type=fixtures').then(res => res.json())
-    ]);
+    await checkServerHealth(); // Run this first
 
-    if (s.standings) renderStandings(s.standings[0].table);
+    try {
+        const [s, r, f] = await Promise.all([
+            fetch('/api/football?type=standings').then(res => res.json()),
+                                            fetch('/api/football?type=results').then(res => res.json()),
+                                            fetch('/api/football?type=fixtures').then(res => res.json())
+        ]);
 
-    if (r.matches) {
-        const maxGW = Math.max(...r.matches.map(m => m.matchday));
-        const latest = r.matches.filter(m => m.matchday === maxGW);
-        renderResults(latest, maxGW);
-        fetchMatchHighlights(latest);
-    }
+        if (s.standings) renderStandings(s.standings[0].table);
 
-    if (f.matches) {
-        const nextGW = Math.min(...f.matches.map(m => m.matchday));
-        renderFixtures(f.matches.filter(m => m.matchday === nextGW), nextGW);
-    }
+        if (r.matches) {
+            const maxGW = Math.max(...r.matches.map(m => m.matchday));
+            const latest = r.matches.filter(m => m.matchday === maxGW);
+            renderResults(latest, maxGW);
+            fetchMatchHighlights(latest);
+        }
+
+        if (f.matches) {
+            const nextGW = Math.min(...f.matches.map(m => m.matchday));
+            renderFixtures(f.matches.filter(m => m.matchday === nextGW), nextGW);
+        }
+    } catch (e) { console.error("Init Error:", e); }
 }
 
 async function fetchMatchHighlights(matches) {
-    UI.videos.innerHTML = `<div class="loader">Optimizing video servers...</div>`;
+    UI.videos.innerHTML = `<div class="loader">Syncing Highlights...</div>`;
     const topMatches = matches.slice(0, 6);
 
     const videoResults = await Promise.all(topMatches.map(match => {
@@ -76,6 +76,7 @@ function renderVideoCard(v) {
     const div = document.createElement('div');
     div.className = 'v-card';
     div.onclick = () => {
+        // Embed logic using the best discovered instance
         UI.player.innerHTML = `<iframe src="${bestInstance}/embed/${v.id.videoId}?autoplay=1" allowfullscreen></iframe>`;
         UI.modal.style.display = 'flex';
     };
@@ -86,6 +87,7 @@ function renderVideoCard(v) {
     UI.videos.appendChild(div);
 }
 
+// ... renderResults, renderFixtures, renderStandings stay exactly as they were ...
 function renderResults(matches, gw) {
     UI.results.innerHTML = `<div class="gw-label">Gameweek ${gw} Results</div>` +
     matches.map(m => `
@@ -98,7 +100,7 @@ function renderResults(matches, gw) {
 }
 
 function renderFixtures(matches, gw) {
-    UI.fixtures.innerHTML = `<div class="gw-label">Upcoming: Gameweek ${gw}</div>` +
+    UI.fixtures.innerHTML = `<div class="gw-label">Next: Gameweek ${gw}</div>` +
     matches.map(m => `
     <div class="item">
     <div class="team"><img src="${m.homeTeam.crest}" class="crest-sm"> ${m.homeTeam.shortName}</div>
