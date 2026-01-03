@@ -9,37 +9,59 @@ const UI = {
 
 async function init() {
     try {
-        const [s, r, f, v] = await Promise.all([
+        const [s, r, f] = await Promise.all([
             fetch('/api/football?type=standings').then(res => res.json()),
-                                               fetch('/api/football?type=results').then(res => res.json()),
-                                               fetch('/api/football?type=fixtures').then(res => res.json()),
-                                               fetch('/api/football?type=highlights').then(res => res.json())
+                                            fetch('/api/football?type=results').then(res => res.json()),
+                                            fetch('/api/football?type=fixtures').then(res => res.json())
         ]);
 
         if (s.standings) renderStandings(s.standings[0].table);
 
         if (r.matches && r.matches.length > 0) {
             const maxGW = Math.max(...r.matches.map(m => m.matchday));
-            const latestRes = r.matches.filter(m => m.matchday === maxGW);
-            renderResults(latestRes, maxGW);
+            const latestMatches = r.matches.filter(m => m.matchday === maxGW);
+            renderResults(latestMatches, maxGW);
+
+            // Trigger specific video searches based on the results found
+            fetchMatchHighlights(latestMatches);
         }
 
         if (f.matches && f.matches.length > 0) {
             const nextGW = Math.min(...f.matches.map(m => m.matchday));
-            const upcoming = f.matches.filter(m => m.matchday === nextGW);
-            renderFixtures(upcoming, nextGW);
+            renderFixtures(f.matches.filter(m => m.matchday === nextGW), nextGW);
         }
+    } catch (e) { console.error("Initialization failed", e); }
+}
 
-        // VIDEO ERROR HANDLING
-        if (v.error) {
-            UI.videos.innerHTML = `<p style="color:red; font-size:0.7rem;">YouTube Error: ${v.error}</p>`;
-        } else if (v && v.length > 0) {
-            renderVideos(v);
-        } else {
-            UI.videos.innerHTML = `<p style="color:#888; font-size:0.7rem;">No videos found. Check API key.</p>`;
-        }
+async function fetchMatchHighlights(matches) {
+    UI.videos.innerHTML = `<p style="grid-column: 1/-1; color: #888;">Finding match highlights...</p>`;
+    const topMatches = matches.slice(0, 6); // Limit to 6 to save API quota
 
-    } catch (e) { console.error("Init Error:", e); }
+    const videoRequests = topMatches.map(match => {
+        const term = `${match.homeTeam.name} vs ${match.awayTeam.name} highlights 2026`;
+        return fetch(`/api/football?type=highlights&q=${encodeURIComponent(term)}`).then(res => res.json());
+    });
+
+    const videoResults = await Promise.all(videoRequests);
+    UI.videos.innerHTML = ""; // Clear loader
+
+    videoResults.forEach(items => {
+        if (items && items.length > 0) renderVideoCard(items[0]);
+    });
+}
+
+function renderVideoCard(v) {
+    const div = document.createElement('div');
+    div.className = 'v-card';
+    div.onclick = () => {
+        UI.player.innerHTML = `<iframe src="https://www.youtube.com/embed/${v.id.videoId}?autoplay=1" allowfullscreen></iframe>`;
+        UI.modal.style.display = 'flex';
+    };
+    div.innerHTML = `
+    <img src="${v.snippet.thumbnails.high.url}">
+    <div class="v-title">${v.snippet.title}</div>
+    `;
+    UI.videos.appendChild(div);
 }
 
 function renderResults(matches, gw) {
@@ -54,7 +76,7 @@ function renderResults(matches, gw) {
 }
 
 function renderFixtures(matches, gw) {
-    UI.fixtures.innerHTML = `<div class="gw-label">Next: Gameweek ${gw}</div>` +
+    UI.fixtures.innerHTML = `<div class="gw-label">Upcoming: Gameweek ${gw}</div>` +
     matches.map(m => `
     <div class="item">
     <div class="team"><img src="${m.homeTeam.crest}" class="crest-sm"> ${m.homeTeam.shortName}</div>
@@ -66,45 +88,10 @@ function renderFixtures(matches, gw) {
 
 function renderStandings(data) {
     UI.standings.innerHTML = data.map(r => `
-    <tr>
-    <td>${r.position}</td>
-    <td class="team-cell"><img src="${r.team.crest}" class="crest-sm"> ${r.team.shortName}</td>
-    <td><strong>${r.points}</strong></td>
-    </tr>
+    <tr><td>${r.position}</td><td class="team-cell"><img src="${r.team.crest}" class="crest-sm">${r.team.shortName}</td><td>${r.points}</td></tr>
     `).join('');
 }
 
-function renderVideos(videos) {
-    if (!videos || videos.length === 0) {
-        UI.videos.innerHTML = `<p style="color:#888; font-size:0.8rem; text-align:center;">API Key active but no videos found. Try redeploying Netlify.</p>`;
-        return;
-    }
-
-    UI.videos.innerHTML = videos.map(v => {
-        const title = v.snippet.title.replace(/[^\w\s]/gi, ''); // Clean title
-        const thumb = v.snippet.thumbnails.high.url;
-        const videoId = v.id.videoId;
-
-        return `
-        <div class="v-card" onclick="playYT('${videoId}')">
-        <img src="${thumb}" alt="thumbnail">
-        <div class="v-overlay">
-        <span class="play-btn">▶</span>
-        <div class="v-title">${title}</div>
-        </div>
-        </div>
-        `;
-    }).join('');
-}
-
-window.playYT = (id) => {
-    UI.player.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1" allowfullscreen></iframe>`;
-    UI.modal.style.display = 'flex';
-};
-
-window.closeVideo = () => {
-    UI.modal.style.display = 'none';
-    UI.player.innerHTML = "";
-};
+window.closeVideo = () => { UI.modal.style.display = 'none'; UI.player.innerHTML = ""; };
 
 init();
