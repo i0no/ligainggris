@@ -16,9 +16,8 @@ exports.handler = async (event) => {
         }
 
         if (type === 'news') {
-            // Using Sky Sports Premier League RSS
-            const skyRss = `https://www.skysports.com/rss/12040`;
-            const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(skyRss)}&api_key=oyfr7mqv5id7jhf6v6vxl9nscuxm4btvx8pux0v5`);
+            const skyRss = encodeURIComponent(`https://www.skysports.com/rss/12040`);
+            const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${skyRss}`);
             const data = await res.json();
             return { statusCode: 200, headers, body: JSON.stringify(data.items || []) };
         }

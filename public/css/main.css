@@ -97,3 +97,40 @@ iframe { width: 100%; aspect-ratio: 16/9; border: none; border-radius: 15px; bac
     transition: 0.3s;
 }
 .load-more-dots:hover span { opacity: 0.8; transform: scale(1.2); }
+
+/* Pagination Dots */
+.load-more-dots {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px 0;
+}
+
+.load-more-dots span {
+    width: 12px;
+    height: 12px;
+    background: #ccc;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.load-more-dots span:hover {
+    background: var(--p);
+    transform: scale(1.2);
+}
+
+.load-more-dots span.active {
+    background: var(--p);
+    width: 30px; /* Stretch the active dot for a pro look */
+    border-radius: 6px;
+    opacity: 1;
+}
+
+/* Ensure the grid height is consistent to prevent news jumping */
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 15px;
+    min-height: 400px; /* Adjust this based on your thumbnail size */
+}

@@ -3,13 +3,14 @@ const UI = {
     results: document.getElementById('results-root'),
     fixtures: document.getElementById('fixtures-root'),
     videos: document.getElementById('video-root'),
-    news: document.getElementById('news-root'), // Make sure this ID exists in your HTML
+    news: document.getElementById('news-root'),
     modal: document.getElementById('video-modal'),
     player: document.getElementById('video-player')
 };
 
 let allMatches = [];
-let videoLimit = 6;
+let currentPage = 0;
+const PAGE_SIZE = 6;
 
 async function init() {
     try {
@@ -21,60 +22,74 @@ async function init() {
         ]);
 
         if (s.standings) renderStandings(s.standings[0].table);
-        if (n) renderNews(n);
+        if (n && n.length > 0) renderNews(n);
 
         if (r.matches) {
             const maxGW = Math.max(...r.matches.map(m => m.matchday));
             allMatches = r.matches.filter(m => m.matchday === maxGW);
             renderResults(allMatches, maxGW);
-            // Fetch initial 6
-            fetchMatchHighlights(allMatches.slice(0, videoLimit));
+
+            // Initial Load Page 0
+            loadVideoPage(0);
         }
 
         if (f.matches) {
             const nextGW = Math.min(...f.matches.map(m => m.matchday));
             renderFixtures(f.matches.filter(m => m.matchday === nextGW), nextGW);
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Init error", e); }
 }
 
-async function fetchMatchHighlights(matches) {
-    const videoResults = await Promise.all(matches.map(match => {
+async function loadVideoPage(pageNumber) {
+    // 1. Clear existing videos and show loader
+    UI.videos.innerHTML = `<div class="loader">Loading Page ${pageNumber + 1}...</div>`;
+
+    // 2. Calculate slice
+    const start = pageNumber * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    const pageMatches = allMatches.slice(start, end);
+
+    // 3. Fetch specific match highlights for this page
+    const videoResults = await Promise.all(pageMatches.map(match => {
         const term = `${match.homeTeam.shortName} vs ${match.awayTeam.shortName}`;
         return fetch(`/api/football?type=highlights&q=${encodeURIComponent(term)}`).then(res => res.json());
     }));
 
+    // 4. Clear loader and render new set
+    UI.videos.innerHTML = "";
     videoResults.forEach(items => {
         if (items && items.length > 0) renderVideoCard(items[0]);
     });
 
-        renderPaginationDots();
+        // 5. Update the dots (pagination UI)
+        renderPagination(pageNumber);
 }
 
-function renderPaginationDots() {
-    let dot = document.getElementById('load-more-btn');
-    if (!dot) {
-        dot = document.createElement('div');
-        dot.id = "load-more-btn";
-        dot.className = "load-more-dots";
-        dot.innerHTML = "<span></span><span></span><span></span>";
-        // Place dots between video grid and news
-        UI.videos.after(dot);
+function renderPagination(activePage) {
+    let pager = document.getElementById('video-pager-dots');
+    if (!pager) {
+        pager = document.createElement('div');
+        pager.id = "video-pager-dots";
+        pager.className = "load-more-dots";
+        UI.videos.after(pager);
     }
 
-    dot.onclick = async () => {
-        const nextSet = allMatches.slice(videoLimit, videoLimit + 3);
-        videoLimit += 3;
-        await fetchMatchHighlights(nextSet);
-        if (videoLimit >= allMatches.length) dot.remove();
-    };
+    const totalPages = Math.ceil(allMatches.length / PAGE_SIZE);
+    pager.innerHTML = ""; // Reset dots
 
-        if (videoLimit >= allMatches.length) dot.remove();
+    for (let i = 0; i < totalPages; i++) {
+        const dot = document.createElement('span');
+        if (i === activePage) dot.classList.add('active');
+        dot.onclick = () => {
+            currentPage = i;
+            loadVideoPage(i);
+        };
+        pager.appendChild(dot);
+    }
 }
 
 function renderNews(news) {
-    UI.news.innerHTML = `<div class="section-title">Latest UK Football News</div>` +
-    news.slice(0, 10).map(item => `
+    UI.news.innerHTML = news.slice(0, 8).map(item => `
     <a href="${item.link}" target="_blank" class="news-item">
     <div class="news-meta">SKY SPORTS • ${new Date(item.pubDate).toLocaleDateString()}</div>
     <div class="news-title">${item.title}</div>
@@ -93,7 +108,7 @@ function renderVideoCard(v) {
     UI.videos.appendChild(div);
 }
 
-// ... renderResults, renderFixtures, renderStandings remain the same ...
+// Data Rendering (Locked UI)
 function renderResults(m, g) { UI.results.innerHTML = `<div class="gw-label">GW ${g} Results</div>` + m.map(match => `<div class="item"><div class="team"><img src="${match.homeTeam.crest}" class="crest-sm"> ${match.homeTeam.shortName}</div><span class="score">${match.score.fullTime.home}-${match.score.fullTime.away}</span><div class="team">${match.awayTeam.shortName} <img src="${match.awayTeam.crest}" class="crest-sm"></div></div>`).join(''); }
 function renderFixtures(m, g) { UI.fixtures.innerHTML = `<div class="gw-label">Next GW ${g}</div>` + m.map(match => `<div class="item"><div class="team"><img src="${match.homeTeam.crest}" class="crest-sm"> ${match.homeTeam.shortName}</div><span class="date">${new Date(match.utcDate).toLocaleDateString([], {day:'numeric', month:'short'})}</span><div class="team">${match.awayTeam.shortName} <img src="${match.awayTeam.crest}" class="crest-sm"></div></div>`).join(''); }
 function renderStandings(d) { UI.standings.innerHTML = d.map(r => `<tr><td>${r.position}</td><td class="team-cell"><img src="${r.team.crest}" class="crest-sm">${r.team.shortName}</td><td>${r.points}</td></tr>`).join(''); }
