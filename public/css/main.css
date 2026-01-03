@@ -1,136 +1,34 @@
-:root { --p: #3d195b; --g: #00ff85; --bg: #f0f2f5; }
-body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+:root { --p: #3d195b; --g: #00ff85; --bg: #f4f4f4; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
 .container { max-width: 1400px; margin: 0 auto; }
+header h1 { color: var(--p); font-weight: 900; margin-bottom: 20px; }
 
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-h1 { color: var(--p); font-weight: 900; font-size: 2rem; margin: 0; letter-spacing: -1px; }
+.main-layout { display: grid; grid-template-columns: 260px 1fr 300px; gap: 20px; }
+@media (max-width: 1000px) { .main-layout { grid-template-columns: 1fr; } }
 
-.main-layout { display: grid; grid-template-columns: 260px 1fr 320px; gap: 20px; }
-@media (max-width: 1100px) { .main-layout { grid-template-columns: 1fr; } }
+.card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+.section-title { font-weight: 800; font-size: 0.7rem; text-transform: uppercase; color: #888; border-left: 4px solid var(--g); padding-left: 10px; margin-bottom: 15px; }
 
-.card { background: #fff; padding: 20px; border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.03); }
-.section-title { font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: #999; border-left: 4px solid var(--g); padding-left: 12px; margin-bottom: 20px; }
+.video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px; min-height: 350px; }
+.v-card { position: relative; aspect-ratio: 16/9; background: #000; border-radius: 8px; cursor: pointer; overflow: hidden; }
+.v-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
+.v-title { position: absolute; bottom: 0; background: rgba(0,0,0,0.8); color: #fff; font-size: 0.7rem; padding: 10px; width: 100%; box-sizing: border-box; }
 
-.mini-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
-.mini-table td { padding: 12px 2px; border-bottom: 1px solid #f0f0f0; }
-.team-cell { display: flex; align-items: center; gap: 10px; font-weight: 700; }
-.crest-sm { width: 24px; height: 24px; object-fit: contain; }
+.load-more-dots { display: flex; justify-content: center; gap: 10px; padding: 20px; }
+.load-more-dots span { width: 10px; height: 10px; background: #ddd; border-radius: 50%; cursor: pointer; }
+.load-more-dots span.active { background: var(--p); width: 25px; border-radius: 5px; }
 
-.video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px; }
-.v-card { position: relative; aspect-ratio: 16/9; background: #000; border-radius: 12px; cursor: pointer; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
-.v-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: transform 0.4s ease; }
-.v-card:hover img { transform: scale(1.08); opacity: 1; }
-.v-title { position: absolute; bottom: 0; background: linear-gradient(transparent, rgba(0,0,0,0.95)); color: #fff; font-size: 0.8rem; padding: 15px; width: 100%; font-weight: 600; box-sizing: border-box; }
+.news-item { display: block; text-decoration: none; color: #333; padding: 12px 0; border-bottom: 1px solid #eee; }
+.news-meta { font-size: 0.6rem; font-weight: 800; color: var(--p); margin-bottom: 4px; }
+.news-title { font-size: 0.85rem; font-weight: 700; line-height: 1.3; }
 
-.item { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #eee; padding: 12px; border-radius: 10px; margin-bottom: 10px; font-size: 0.85rem; font-weight: 800; transition: transform 0.2s; }
-.item:hover { transform: translateX(5px); border-color: var(--g); }
-.team { display: flex; align-items: center; gap: 10px; flex: 1; }
-.team:last-child { justify-content: flex-end; }
-.score { background: var(--p); color: #fff; padding: 3px 10px; border-radius: 5px; margin: 0 10px; min-width: 45px; text-align: center; font-family: monospace; }
+.mini-table { width: 100%; font-size: 0.8rem; border-collapse: collapse; }
+.item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f0f0f0; font-size: 0.8rem; font-weight: 700; }
+.score { background: var(--p); color: #fff; padding: 2px 6px; border-radius: 4px; }
+.crest-sm { width: 20px; height: 20px; object-fit: contain; }
 
-.gw-label { background: var(--p); color: white; font-size: 0.7rem; font-weight: 900; text-align: center; padding: 8px; border-radius: 8px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1.5px; }
-.date { font-size: 0.75rem; color: #888; font-weight: 600; }
-
-.loader { grid-column: 1/-1; text-align: center; padding: 40px; color: var(--p); font-weight: 800; text-transform: uppercase; letter-spacing: 2px; font-size: 0.7rem; }
-
-.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 2000; justify-content: center; align-items: center; }
-.modal-content { width: 95%; max-width: 1100px; position: relative; }
-.close-modal { position: absolute; top: -50px; right: 0; color: #fff; cursor: pointer; font-size: 3.5rem; line-height: 1; }
-iframe { width: 100%; aspect-ratio: 16/9; border: none; border-radius: 15px; background: #000; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-
-/* ... keep your existing layout styles ... */
-
-.player-wrapper { position: relative; width: 100%; height: 100%; }
-.server-status {
-    position: absolute;
-    bottom: -50px;
-    left: 0;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #888;
-    font-size: 0.7rem;
-}
-.server-status button {
-    background: #ff4b4b;
-    color: white;
-    border: none;
-    padding: 5px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-}
-.server-status button:hover { background: #ff0000; }
-
-/* News Styles (Locked Design) */
-#news-root { margin-top: 20px; }
-.news-item {
-    display: block;
-    text-decoration: none;
-    color: #333;
-    padding: 15px 0;
-    border-bottom: 1px solid #eee;
-    transition: background 0.2s;
-}
-.news-item:last-child { border-bottom: none; }
-.news-item:hover { background: #f9f9f9; }
-
-.news-meta { font-size: 0.65rem; font-weight: 900; color: var(--p); text-transform: uppercase; margin-bottom: 5px; opacity: 0.6; }
-.news-title { font-size: 0.9rem; font-weight: 700; line-height: 1.4; }
-
-/* Load More Dots */
-.load-more-dots {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    padding: 25px;
-    cursor: pointer;
-    width: 100%;
-}
-.load-more-dots span {
-    width: 10px;
-    height: 10px;
-    background: var(--p);
-    border-radius: 50%;
-    opacity: 0.2;
-    transition: 0.3s;
-}
-.load-more-dots:hover span { opacity: 0.8; transform: scale(1.2); }
-
-/* Pagination Dots */
-.load-more-dots {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    padding: 20px 0;
-}
-
-.load-more-dots span {
-    width: 12px;
-    height: 12px;
-    background: #ccc;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.load-more-dots span:hover {
-    background: var(--p);
-    transform: scale(1.2);
-}
-
-.load-more-dots span.active {
-    background: var(--p);
-    width: 30px; /* Stretch the active dot for a pro look */
-    border-radius: 6px;
-    opacity: 1;
-}
-
-/* Ensure the grid height is consistent to prevent news jumping */
-.video-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 15px;
-    min-height: 400px; /* Adjust this based on your thumbnail size */
-}
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; }
+.modal-content { width: 90%; max-width: 900px; position: relative; }
+.close-modal { position: absolute; top: -40px; right: 0; color: #fff; font-size: 2rem; cursor: pointer; }
+iframe { width: 100%; aspect-ratio: 16/9; border: none; }
+.loader { grid-column: 1/-1; text-align: center; color: var(--p); padding: 40px; font-weight: 900; }

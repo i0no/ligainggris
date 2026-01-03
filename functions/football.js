@@ -4,20 +4,24 @@ exports.handler = async (event) => {
     const API_KEY = process.env.FOOTBALL_API_KEY;
     const YT_KEY = process.env.YOUTUBE_API_KEY;
 
-    const headers = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
+    const headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+    };
 
     try {
         if (type === 'highlights') {
             const term = encodeURIComponent(`${queryParam} official highlights`);
             const ytUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&order=relevance&type=video&q=${term}&key=${YT_KEY}`;
-            const ytRes = await fetch(ytUrl);
-            const ytData = await ytRes.json();
-            return { statusCode: 200, headers, body: JSON.stringify(ytData.items || []) };
+            const res = await fetch(ytUrl);
+            const data = await res.json();
+            return { statusCode: 200, headers, body: JSON.stringify(data.items || []) };
         }
 
         if (type === 'news') {
-            const skyRss = encodeURIComponent(`https://www.skysports.com/rss/12040`);
-            const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${skyRss}`);
+            // Using a high-reliability RSS proxy
+            const rssUrl = `https://www.skysports.com/rss/12040`;
+            const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
             const data = await res.json();
             return { statusCode: 200, headers, body: JSON.stringify(data.items || []) };
         }
@@ -32,7 +36,7 @@ exports.handler = async (event) => {
         const data = await response.json();
         return { statusCode: 200, headers, body: JSON.stringify(data) };
 
-    } catch (error) {
-        return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
+    } catch (e) {
+        return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
     }
 };
