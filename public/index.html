@@ -1,73 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Premier Dash | Pro Football Insights</title>
-<link rel="stylesheet" href="css/main.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPL Pro Hub</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>Premier Dash</h1>
+            <div id="sync-status">Connecting...</div>
+        </header>
 
-<div class="container">
-<header class="dashboard-header">
-<div class="logo-area">
-<h1>Premier Dash</h1>
-<p>Live Results & Official Highlights</p>
-</div>
-<div id="sync-status" class="sync-pill">Initializing...</div>
-</header>
+        <div class="main-layout">
+            <aside class="card">
+                <div class="section-title">Standings</div>
+                <table class="mini-table">
+                    <thead><tr><th>#</th><th>Team</th><th>Pts</th></tr></thead>
+                    <tbody id="standings-root"></tbody>
+                </table>
+            </aside>
 
-<main class="db-grid">
-<section class="card wide">
-<div class="section-title">Latest Match Highlights</div>
-<div id="highlights-root" class="highlights-container"></div>
-</section>
+            <section class="card">
+                <div class="section-title">Latest Match Highlights</div>
+                <div id="video-root" class="video-grid"></div>
+            </section>
 
-<section class="card">
-<div class="section-title">League Table</div>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>Club</th>
-<th>P</th>
-<th>GD</th>
-<th>Pts</th>
-</tr>
-</thead>
-<tbody id="standings-root"></tbody>
-</table>
-</div>
-</section>
+            <aside class="card">
+                <div class="section-title">Latest Scores</div>
+                <div id="results-root"></div>
+            </aside>
+        </div>
+    </div>
 
-<aside class="sidebar">
-<div class="card">
-<div class="section-title">Upcoming Fixtures</div>
-<div id="matches-root"></div>
-</div>
-
-<div class="card promo">
-<h4>Open Source</h4>
-<p>Built with Netlify Functions & Vanilla JS</p>
-<a href="https://github.com/i0no/sholatdulu" target="_blank">View on GitHub →</a>
-</div>
-</aside>
-</main>
-
-<footer>
-Developed with ❤️ by <a href="https://iono.me" target="_blank">Ion</a>
-</footer>
-</div>
-
-<div id="video-modal" class="modal">
-<div class="modal-content">
-<span class="close-modal">&times;</span>
-<div id="video-player"></div>
-</div>
-</div>
-
-<script src="js/app.js"></script>
+    <div id="video-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div id="video-player"></div>
+        </div>
+    </div>
+    <script src="js/app.js"></script>
 </body>
 </html>
