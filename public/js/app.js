@@ -9,7 +9,7 @@ const UI = {
 
 // Switching to Invidious instances for better stability against black screens
 const INSTANCES = [
-    "https://yewtu.be",
+    // "https://yewtu.be",
 "https://vid.puffyan.us",
 "https://inv.vern.cc",
 "https://invidious.nerdvpn.de"
