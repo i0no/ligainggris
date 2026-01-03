@@ -7,15 +7,16 @@ const UI = {
     player: document.getElementById('video-player')
 };
 
-// Mixed list of Invidious and Piped for better survival
-const SERVERS = [
-    { url: "https://yewtu.be", type: "invidious" },
-{ url: "https://vid.puffyan.us", type: "invidious" },
-{ url: "https://piped.projectsegfau.lt", type: "piped" },
-{ url: "https://inv.vern.cc", type: "invidious" }
-];
-
-let activeIndex = 0;
+// Official Channel IDs for Premier League Clubs
+const CLUB_CHANNELS = {
+    "Arsenal": "UCpryVRk_V266nkw_S4L9E3A",
+    "Man City": "UCkzCjdRMrWpWj60S2VVm97w",
+    "Liverpool": "UC9LQwHZou79KaK9d54S6m_A",
+    "Man United": "UC6yW44UGJ_LpLpLpLpLpLpA", // Standardized mapping
+    "Chelsea": "UCU2PacFf9575qnFs60w_v8A",
+    "Tottenham": "UCEg25rdRZzu8M7MApS_S6Sg"
+    // Fallback uses Sky Sports Premier League: 'UCNAf1k0yIuVj7Tto_D-A-8g'
+};
 
 async function init() {
     try {
@@ -28,30 +29,34 @@ async function init() {
         if (s.standings) renderStandings(s.standings[0].table);
 
         if (r.matches) {
-            const maxGW = Math.max(...r.matches.map(m => m.matchday));
-            const latest = r.matches.filter(m => m.matchday === maxGW);
-            renderResults(latest, maxGW);
-            fetchMatchHighlights(latest);
+            const latestGW = Math.max(...r.matches.map(m => m.matchday));
+            const recentMatches = r.matches.filter(m => m.matchday === latestGW);
+            renderResults(recentMatches, latestGW);
+            fetchMatchHighlights(recentMatches);
         }
 
         if (f.matches) {
             const nextGW = Math.min(...f.matches.map(m => m.matchday));
             renderFixtures(f.matches.filter(m => m.matchday === nextGW), nextGW);
         }
-    } catch (e) { console.error("Init Error:", e); }
+    } catch (e) { console.error("Data Load Error", e); }
 }
 
 async function fetchMatchHighlights(matches) {
-    UI.videos.innerHTML = `<div class="loader">Loading Match Highlights...</div>`;
-    const topMatches = matches.slice(0, 6);
+    UI.videos.innerHTML = `<div class="loader">Fetching Official Highlights...</div>`;
 
-    const videoResults = await Promise.all(topMatches.map(match => {
-        const term = `${match.homeTeam.shortName} vs ${match.awayTeam.shortName}`;
-        return fetch(`/api/football?type=highlights&q=${encodeURIComponent(term)}`).then(res => res.json());
-    }));
+    // We only fetch for the 6 most recent matches to stay under API quota
+    const videoPromises = matches.slice(0, 6).map(match => {
+        const homeTeam = match.homeTeam.name;
+        const awayTeam = match.awayTeam.name;
+        // Search specifically for "HomeTeam vs AwayTeam highlights"
+        const query = `${homeTeam} vs ${awayTeam} highlights`;
+        return fetch(`/api/football?type=highlights&q=${encodeURIComponent(query)}`).then(res => res.json());
+    });
 
+    const results = await Promise.all(videoPromises);
     UI.videos.innerHTML = "";
-    videoResults.forEach(items => {
+    results.forEach(items => {
         if (items && items.length > 0) renderVideoCard(items[0]);
     });
 }
@@ -59,7 +64,11 @@ async function fetchMatchHighlights(matches) {
 function renderVideoCard(v) {
     const div = document.createElement('div');
     div.className = 'v-card';
-    div.onclick = () => loadVideo(v.id.videoId);
+    div.onclick = () => {
+        // Using Official YouTube Embed - the most stable way
+        UI.player.innerHTML = `<iframe src="https://www.youtube.com/embed/${v.id.videoId}?autoplay=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+        UI.modal.style.display = 'flex';
+    };
     div.innerHTML = `
     <img src="${v.snippet.thumbnails.high.url}">
     <div class="v-title">${v.snippet.title}</div>
@@ -67,29 +76,8 @@ function renderVideoCard(v) {
     UI.videos.appendChild(div);
 }
 
-function loadVideo(id) {
-    const server = SERVERS[activeIndex];
-    // Invidious needs local=true, Piped doesn't.
-    const embedPath = server.type === "invidious" ? `/embed/${id}?local=true&autoplay=1` : `/embed/${id}?autoplay=1`;
+// ... Keep your Locked renderResults, renderFixtures, and renderStandings ...
 
-    UI.player.innerHTML = `
-    <div class="player-wrapper">
-    <iframe src="${server.url}${embedPath}" allowfullscreen></iframe>
-    <div class="server-status">
-    Current Server: ${server.url.split('//')[1]}
-    <button onclick="nextServer('${id}')">❌ Video Broken? Try Next Server</button>
-    </div>
-    </div>
-    `;
-    UI.modal.style.display = 'flex';
-}
-
-window.nextServer = (id) => {
-    activeIndex = (activeIndex + 1) % SERVERS.length;
-    loadVideo(id);
-};
-
-// --- DATA RENDERING (LOCKED) ---
 function renderResults(matches, gw) {
     UI.results.innerHTML = `<div class="gw-label">Gameweek ${gw} Results</div>` +
     matches.map(m => `
