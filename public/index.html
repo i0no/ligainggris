@@ -3,35 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPL Pro Hub</title>
+    <title>EPL Dash</title>
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
     <div class="container">
-        <header><h1>Premier Dash</h1><div id="sync-status">● LIVE</div></header>
+        <header>
+            <h1>Premier Dash</h1>
+            <div id="sync-status">● LIVE</div>
+        </header>
 
         <div class="main-layout">
             <aside class="card">
-                <div class="section-title">Table</div>
+                <div class="section-title">League Table</div>
                 <table class="mini-table">
                     <tbody id="standings-root"></tbody>
                 </table>
             </aside>
 
-            <section>
-                <div class="card">
-                    <div class="section-title">Latest Highlights</div>
-                    <div id="video-root" class="video-grid"></div>
-                </div>
-                <div class="card" style="margin-top:20px">
-                    <div class="section-title">Upcoming Fixtures</div>
-                    <div id="fixtures-root" class="fixture-list"></div>
-                </div>
+            <section class="card">
+                <div class="section-title">Latest Highlights</div>
+                <div id="video-root" class="video-grid"></div>
             </section>
 
-            <aside class="card">
-                <div class="section-title">Recent Scores</div>
-                <div id="results-root"></div>
+            <aside class="sidebar-right">
+                <div class="card mb">
+                    <div id="results-root"></div>
+                </div>
+                <div class="card">
+                    <div id="fixtures-root"></div>
+                </div>
             </aside>
         </div>
     </div>
