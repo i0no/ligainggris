@@ -75,12 +75,26 @@ function renderStandings(data) {
 }
 
 function renderVideos(videos) {
-    UI.videos.innerHTML = videos.map(v => `
-    <div class="v-card" onclick="playYT('${v.id.videoId}')">
-    <img src="${v.snippet.thumbnails.high.url}">
-    <div class="v-title">${v.snippet.title}</div>
-    </div>
-    `).join('');
+    if (!videos || videos.length === 0) {
+        UI.videos.innerHTML = `<p style="color:#888; font-size:0.8rem; text-align:center;">API Key active but no videos found. Try redeploying Netlify.</p>`;
+        return;
+    }
+
+    UI.videos.innerHTML = videos.map(v => {
+        const title = v.snippet.title.replace(/[^\w\s]/gi, ''); // Clean title
+        const thumb = v.snippet.thumbnails.high.url;
+        const videoId = v.id.videoId;
+
+        return `
+        <div class="v-card" onclick="playYT('${videoId}')">
+        <img src="${thumb}" alt="thumbnail">
+        <div class="v-overlay">
+        <span class="play-btn">▶</span>
+        <div class="v-title">${title}</div>
+        </div>
+        </div>
+        `;
+    }).join('');
 }
 
 window.playYT = (id) => {
