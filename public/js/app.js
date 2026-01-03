@@ -18,41 +18,53 @@ async function init() {
 
         if (s.standings) renderStandings(s.standings[0].table);
 
-        // FILTER: Only show the last completed gameweek
-        if (r.matches) {
-            const lastGameweek = r.matches[0]?.matchday;
-            const filteredResults = r.matches.filter(m => m.matchday === lastGameweek);
-            renderResults(filteredResults, lastGameweek);
+        // FIX: Find the LATEST matchday by sorting descending
+        if (r.matches && r.matches.length > 0) {
+            const sortedMatches = r.matches.sort((a, b) => b.matchday - a.matchday);
+            const latestGW = sortedMatches[0].matchday;
+            const latestResults = sortedMatches.filter(m => m.matchday === latestGW);
+            renderResults(latestResults, latestGW);
         }
 
         if (f.matches) renderFixtures(f.matches);
         if (v.response) renderVideos(v.response);
-    } catch (e) { console.error("Load failed", e); }
+    } catch (e) { console.error("Init Error:", e); }
 }
 
 function renderResults(matches, gw) {
-    let html = `<div class="gw-label">Gameweek ${gw} Results</div>`;
+    let html = `<div class="gw-label">Gameweek ${gw} - Latest Results</div>`;
     html += matches.map(m => `
     <div class="item">
+    <div class="team">
+    <img src="${m.homeTeam.crest}" class="crest-sm">
     <span>${m.homeTeam.shortName}</span>
-    <span class="score">${m.score.fullTime.home}-${m.score.fullTime.away}</span>
+    </div>
+    <span class="score">${m.score.fullTime.home} - ${m.score.fullTime.away}</span>
+    <div class="team">
     <span>${m.awayTeam.shortName}</span>
+    <img src="${m.awayTeam.crest}" class="crest-sm">
+    </div>
     </div>
     `).join('');
     UI.results.innerHTML = html;
 }
 
 function renderStandings(data) {
-    UI.standings.innerHTML = data.slice(0, 20).map(r => `
-    <tr><td>${r.position}</td><td>${r.team.shortName}</td><td><strong>${r.points}</strong></td></tr>
+    UI.standings.innerHTML = data.map(r => `
+    <tr>
+    <td>${r.position}</td>
+    <td class="team-cell"><img src="${r.team.crest}" class="crest-sm"> ${r.team.shortName}</td>
+    <td><strong>${r.points}</strong></td>
+    </tr>
     `).join('');
 }
 
 function renderFixtures(matches) {
-    UI.fixtures.innerHTML = matches.slice(0, 8).map(m => `
-    <div class="item">
-    <span>${m.homeTeam.shortName} vs ${m.awayTeam.shortName}</span>
-    <span class="date">${new Date(m.utcDate).toLocaleDateString([], {day:'numeric', month:'short'})}</span>
+    UI.fixtures.innerHTML = matches.map(m => `
+    <div class="item fixture">
+    <div class="team"><img src="${m.homeTeam.crest}" class="crest-sm"> ${m.homeTeam.shortName}</div>
+    <span class="vs">vs</span>
+    <div class="team">${m.awayTeam.shortName} <img src="${m.awayTeam.crest}" class="crest-sm"></div>
     </div>
     `).join('');
 }
@@ -61,8 +73,11 @@ function renderVideos(videos) {
     const pl = videos.filter(v => v.competition.toUpperCase().includes("PREMIER LEAGUE")).slice(0, 8);
     UI.videos.innerHTML = pl.map(v => `
     <div class="v-card" onclick="playVideo('${btoa(v.videos[0].embed)}')">
-    <img src="${v.thumbnail}">
+    <img src="${v.thumbnail}" loading="lazy">
+    <div class="v-overlay">
+    <span class="play-btn">▶</span>
     <div class="v-title">${v.title}</div>
+    </div>
     </div>
     `).join('');
 }
