@@ -6,7 +6,7 @@ exports.handler = async (event) => {
 
     try {
         if (type === 'highlights') {
-            const term = encodeURIComponent(`${queryParam} full highlights official`);
+            const term = encodeURIComponent(`${queryParam} highlights`);
             const ytUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&order=relevance&type=video&q=${term}&key=${YT_KEY}`;
             const res = await fetch(ytUrl);
             const ytData = await res.json();
@@ -25,7 +25,11 @@ exports.handler = async (event) => {
 
         const res = await fetch(ENDPOINTS[type], { headers: { 'X-Auth-Token': API_KEY } });
         const data = await res.json();
-        return { statusCode: 200, body: JSON.stringify(data) };
+        return {
+            statusCode: 200,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        };
     } catch (e) {
         return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
     }

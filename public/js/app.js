@@ -7,42 +7,66 @@ const UI = {
     player: document.getElementById('video-player')
 };
 
+// Piped and Invidious instances for maximum reliability
+const INSTANCES = [
+    "https://pipedapi.kavin.rocks",
+"https://api.piped.projectsegfau.lt",
+"https://inv.vern.cc",
+"https://yewtu.be"
+];
+
+let bestInstance = "https://piped.video";
+
+async function checkServerHealth() {
+    console.log("Checking server health...");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+    const checks = INSTANCES.map(url =>
+    fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal })
+    .then(() => url.replace('api.', ''))
+    .catch(() => null)
+    );
+
+    const results = await Promise.all(checks);
+    bestInstance = results.find(r => r !== null) || "https://piped.video";
+    console.log("Best server found:", bestInstance);
+}
+
 async function init() {
-    try {
-        const [s, r, f] = await Promise.all([
-            fetch('/api/football?type=standings').then(res => res.json()),
-                                            fetch('/api/football?type=results').then(res => res.json()),
-                                            fetch('/api/football?type=fixtures').then(res => res.json())
-        ]);
+    // Check health and fetch data simultaneously
+    const [_, s, r, f] = await Promise.all([
+        checkServerHealth(),
+                                           fetch('/api/football?type=standings').then(res => res.json()),
+                                           fetch('/api/football?type=results').then(res => res.json()),
+                                           fetch('/api/football?type=fixtures').then(res => res.json())
+    ]);
 
-        if (s.standings) renderStandings(s.standings[0].table);
+    if (s.standings) renderStandings(s.standings[0].table);
 
-        if (r.matches && r.matches.length > 0) {
-            const maxGW = Math.max(...r.matches.map(m => m.matchday));
-            const latestMatches = r.matches.filter(m => m.matchday === maxGW);
-            renderResults(latestMatches, maxGW);
-            fetchMatchHighlights(latestMatches);
-        }
+    if (r.matches) {
+        const maxGW = Math.max(...r.matches.map(m => m.matchday));
+        const latest = r.matches.filter(m => m.matchday === maxGW);
+        renderResults(latest, maxGW);
+        fetchMatchHighlights(latest);
+    }
 
-        if (f.matches && f.matches.length > 0) {
-            const nextGW = Math.min(...f.matches.map(m => m.matchday));
-            renderFixtures(f.matches.filter(m => m.matchday === nextGW), nextGW);
-        }
-    } catch (e) { console.error("Init failed", e); }
+    if (f.matches) {
+        const nextGW = Math.min(...f.matches.map(m => m.matchday));
+        renderFixtures(f.matches.filter(m => m.matchday === nextGW), nextGW);
+    }
 }
 
 async function fetchMatchHighlights(matches) {
-    UI.videos.innerHTML = `<p style="grid-column:1/-1; color:#888; font-size:0.8rem;">Fetching unblocked highlights...</p>`;
+    UI.videos.innerHTML = `<div class="loader">Optimizing video servers...</div>`;
     const topMatches = matches.slice(0, 6);
 
-    const videoRequests = topMatches.map(match => {
-        const term = `${match.homeTeam.name} vs ${match.awayTeam.name}`;
+    const videoResults = await Promise.all(topMatches.map(match => {
+        const term = `${match.homeTeam.shortName} vs ${match.awayTeam.shortName}`;
         return fetch(`/api/football?type=highlights&q=${encodeURIComponent(term)}`).then(res => res.json());
-    });
+    }));
 
-    const videoResults = await Promise.all(videoRequests);
     UI.videos.innerHTML = "";
-
     videoResults.forEach(items => {
         if (items && items.length > 0) renderVideoCard(items[0]);
     });
@@ -52,8 +76,7 @@ function renderVideoCard(v) {
     const div = document.createElement('div');
     div.className = 'v-card';
     div.onclick = () => {
-        // PIPED PROXY TO BYPASS GEO-BLOCKING
-        UI.player.innerHTML = `<iframe src="https://piped.video/embed/${v.id.videoId}?autoplay=1" allowfullscreen></iframe>`;
+        UI.player.innerHTML = `<iframe src="${bestInstance}/embed/${v.id.videoId}?autoplay=1" allowfullscreen></iframe>`;
         UI.modal.style.display = 'flex';
     };
     div.innerHTML = `
@@ -75,7 +98,7 @@ function renderResults(matches, gw) {
 }
 
 function renderFixtures(matches, gw) {
-    UI.fixtures.innerHTML = `<div class="gw-label">Upcoming GW ${gw}</div>` +
+    UI.fixtures.innerHTML = `<div class="gw-label">Upcoming: Gameweek ${gw}</div>` +
     matches.map(m => `
     <div class="item">
     <div class="team"><img src="${m.homeTeam.crest}" class="crest-sm"> ${m.homeTeam.shortName}</div>
