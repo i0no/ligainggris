@@ -3,37 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPL Dash</title>
+    <title>PL Hub | Professional Highlights & News</title>
     <link rel="stylesheet" href="css/main.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
+
     <div class="container">
         <header>
-            <h1>Premier Dash</h1>
-            <div id="sync-status">● LIVE</div>
+            <h1>PL HUB</h1>
+            <div class="live-indicator">LIVE UPDATES</div>
         </header>
 
         <div class="main-layout">
-            <aside class="card">
-                <div class="section-title">League Table</div>
-                <table class="mini-table">
-                    <tbody id="standings-root"></tbody>
-                </table>
-            </aside>
 
-            <section class="card">
-                <div class="section-title">Latest Highlights</div>
-                <div id="video-root" class="video-grid"></div>
-            </section>
-
-            <aside class="sidebar-right">
-                <div class="card mb">
-                    <div id="results-root"></div>
-                </div>
+            <aside class="side-col">
                 <div class="card">
-                    <div id="fixtures-root"></div>
+                    <div class="section-title">League Table</div>
+                    <table class="mini-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Team</th>
+                                <th>PTS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="standings-root">
+                            </tbody>
+                    </table>
                 </div>
             </aside>
+
+            <main class="content-col">
+
+                <section class="card">
+                    <div class="section-title">Official Match Highlights</div>
+                    <div id="video-root" class="video-grid">
+                        </div>
+                </section>
+
+                <section class="card">
+                    <div class="section-title">Latest UK Football News</div>
+                    <div id="news-root">
+                        </div>
+                </section>
+
+            </main>
+
+            <aside class="side-col">
+                <div class="card">
+                    <div class="section-title">Latest Results</div>
+                    <div id="results-root">
+                        </div>
+                </div>
+
+                <div class="card">
+                    <div class="section-title">Upcoming Fixtures</div>
+                    <div id="fixtures-root">
+                        </div>
+                </div>
+            </aside>
+
         </div>
     </div>
 
@@ -43,6 +75,7 @@
             <div id="video-player"></div>
         </div>
     </div>
+
     <script src="js/app.js"></script>
 </body>
 </html>

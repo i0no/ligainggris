@@ -62,3 +62,38 @@ iframe { width: 100%; aspect-ratio: 16/9; border: none; border-radius: 15px; bac
     font-weight: bold;
 }
 .server-status button:hover { background: #ff0000; }
+
+/* News Styles (Locked Design) */
+#news-root { margin-top: 20px; }
+.news-item {
+    display: block;
+    text-decoration: none;
+    color: #333;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+    transition: background 0.2s;
+}
+.news-item:last-child { border-bottom: none; }
+.news-item:hover { background: #f9f9f9; }
+
+.news-meta { font-size: 0.65rem; font-weight: 900; color: var(--p); text-transform: uppercase; margin-bottom: 5px; opacity: 0.6; }
+.news-title { font-size: 0.9rem; font-weight: 700; line-height: 1.4; }
+
+/* Load More Dots */
+.load-more-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 25px;
+    cursor: pointer;
+    width: 100%;
+}
+.load-more-dots span {
+    width: 10px;
+    height: 10px;
+    background: var(--p);
+    border-radius: 50%;
+    opacity: 0.2;
+    transition: 0.3s;
+}
+.load-more-dots:hover span { opacity: 0.8; transform: scale(1.2); }

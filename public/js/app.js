@@ -3,109 +3,100 @@ const UI = {
     results: document.getElementById('results-root'),
     fixtures: document.getElementById('fixtures-root'),
     videos: document.getElementById('video-root'),
+    news: document.getElementById('news-root'), // Make sure this ID exists in your HTML
     modal: document.getElementById('video-modal'),
     player: document.getElementById('video-player')
 };
 
-// Official Channel IDs for Premier League Clubs
-const CLUB_CHANNELS = {
-    "Arsenal": "UCpryVRk_V266nkw_S4L9E3A",
-    "Man City": "UCkzCjdRMrWpWj60S2VVm97w",
-    "Liverpool": "UC9LQwHZou79KaK9d54S6m_A",
-    "Man United": "UC6yW44UGJ_LpLpLpLpLpLpA", // Standardized mapping
-    "Chelsea": "UCU2PacFf9575qnFs60w_v8A",
-    "Tottenham": "UCEg25rdRZzu8M7MApS_S6Sg"
-    // Fallback uses Sky Sports Premier League: 'UCNAf1k0yIuVj7Tto_D-A-8g'
-};
+let allMatches = [];
+let videoLimit = 6;
 
 async function init() {
     try {
-        const [s, r, f] = await Promise.all([
+        const [s, r, f, n] = await Promise.all([
             fetch('/api/football?type=standings').then(res => res.json()),
-                                            fetch('/api/football?type=results').then(res => res.json()),
-                                            fetch('/api/football?type=fixtures').then(res => res.json())
+                                               fetch('/api/football?type=results').then(res => res.json()),
+                                               fetch('/api/football?type=fixtures').then(res => res.json()),
+                                               fetch('/api/football?type=news').then(res => res.json())
         ]);
 
         if (s.standings) renderStandings(s.standings[0].table);
+        if (n) renderNews(n);
 
         if (r.matches) {
-            const latestGW = Math.max(...r.matches.map(m => m.matchday));
-            const recentMatches = r.matches.filter(m => m.matchday === latestGW);
-            renderResults(recentMatches, latestGW);
-            fetchMatchHighlights(recentMatches);
+            const maxGW = Math.max(...r.matches.map(m => m.matchday));
+            allMatches = r.matches.filter(m => m.matchday === maxGW);
+            renderResults(allMatches, maxGW);
+            // Fetch initial 6
+            fetchMatchHighlights(allMatches.slice(0, videoLimit));
         }
 
         if (f.matches) {
             const nextGW = Math.min(...f.matches.map(m => m.matchday));
             renderFixtures(f.matches.filter(m => m.matchday === nextGW), nextGW);
         }
-    } catch (e) { console.error("Data Load Error", e); }
+    } catch (e) { console.error(e); }
 }
 
 async function fetchMatchHighlights(matches) {
-    UI.videos.innerHTML = `<div class="loader">Fetching Official Highlights...</div>`;
+    const videoResults = await Promise.all(matches.map(match => {
+        const term = `${match.homeTeam.shortName} vs ${match.awayTeam.shortName}`;
+        return fetch(`/api/football?type=highlights&q=${encodeURIComponent(term)}`).then(res => res.json());
+    }));
 
-    // We only fetch for the 6 most recent matches to stay under API quota
-    const videoPromises = matches.slice(0, 6).map(match => {
-        const homeTeam = match.homeTeam.name;
-        const awayTeam = match.awayTeam.name;
-        // Search specifically for "HomeTeam vs AwayTeam highlights"
-        const query = `${homeTeam} vs ${awayTeam} highlights`;
-        return fetch(`/api/football?type=highlights&q=${encodeURIComponent(query)}`).then(res => res.json());
-    });
-
-    const results = await Promise.all(videoPromises);
-    UI.videos.innerHTML = "";
-    results.forEach(items => {
+    videoResults.forEach(items => {
         if (items && items.length > 0) renderVideoCard(items[0]);
     });
+
+        renderPaginationDots();
+}
+
+function renderPaginationDots() {
+    let dot = document.getElementById('load-more-btn');
+    if (!dot) {
+        dot = document.createElement('div');
+        dot.id = "load-more-btn";
+        dot.className = "load-more-dots";
+        dot.innerHTML = "<span></span><span></span><span></span>";
+        // Place dots between video grid and news
+        UI.videos.after(dot);
+    }
+
+    dot.onclick = async () => {
+        const nextSet = allMatches.slice(videoLimit, videoLimit + 3);
+        videoLimit += 3;
+        await fetchMatchHighlights(nextSet);
+        if (videoLimit >= allMatches.length) dot.remove();
+    };
+
+        if (videoLimit >= allMatches.length) dot.remove();
+}
+
+function renderNews(news) {
+    UI.news.innerHTML = `<div class="section-title">Latest UK Football News</div>` +
+    news.slice(0, 10).map(item => `
+    <a href="${item.link}" target="_blank" class="news-item">
+    <div class="news-meta">SKY SPORTS • ${new Date(item.pubDate).toLocaleDateString()}</div>
+    <div class="news-title">${item.title}</div>
+    </a>
+    `).join('');
 }
 
 function renderVideoCard(v) {
     const div = document.createElement('div');
     div.className = 'v-card';
     div.onclick = () => {
-        // Using Official YouTube Embed - the most stable way
-        UI.player.innerHTML = `<iframe src="https://www.youtube.com/embed/${v.id.videoId}?autoplay=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+        UI.player.innerHTML = `<iframe src="https://www.youtube.com/embed/${v.id.videoId}?autoplay=1" allowfullscreen></iframe>`;
         UI.modal.style.display = 'flex';
     };
-    div.innerHTML = `
-    <img src="${v.snippet.thumbnails.high.url}">
-    <div class="v-title">${v.snippet.title}</div>
-    `;
+    div.innerHTML = `<img src="${v.snippet.thumbnails.high.url}"><div class="v-title">${v.snippet.title}</div>`;
     UI.videos.appendChild(div);
 }
 
-// ... Keep your Locked renderResults, renderFixtures, and renderStandings ...
-
-function renderResults(matches, gw) {
-    UI.results.innerHTML = `<div class="gw-label">Gameweek ${gw} Results</div>` +
-    matches.map(m => `
-    <div class="item">
-    <div class="team"><img src="${m.homeTeam.crest}" class="crest-sm"> ${m.homeTeam.shortName}</div>
-    <span class="score">${m.score.fullTime.home}-${m.score.fullTime.away}</span>
-    <div class="team">${m.awayTeam.shortName} <img src="${m.awayTeam.crest}" class="crest-sm"></div>
-    </div>
-    `).join('');
-}
-
-function renderFixtures(matches, gw) {
-    UI.fixtures.innerHTML = `<div class="gw-label">Next: Gameweek ${gw}</div>` +
-    matches.map(m => `
-    <div class="item">
-    <div class="team"><img src="${m.homeTeam.crest}" class="crest-sm"> ${m.homeTeam.shortName}</div>
-    <span class="date">${new Date(m.utcDate).toLocaleDateString([], {day:'numeric', month:'short'})}</span>
-    <div class="team">${m.awayTeam.shortName} <img src="${m.awayTeam.crest}" class="crest-sm"></div>
-    </div>
-    `).join('');
-}
-
-function renderStandings(data) {
-    UI.standings.innerHTML = data.map(r => `
-    <tr><td>${r.position}</td><td class="team-cell"><img src="${r.team.crest}" class="crest-sm">${r.team.shortName}</td><td>${r.points}</td></tr>
-    `).join('');
-}
-
+// ... renderResults, renderFixtures, renderStandings remain the same ...
+function renderResults(m, g) { UI.results.innerHTML = `<div class="gw-label">GW ${g} Results</div>` + m.map(match => `<div class="item"><div class="team"><img src="${match.homeTeam.crest}" class="crest-sm"> ${match.homeTeam.shortName}</div><span class="score">${match.score.fullTime.home}-${match.score.fullTime.away}</span><div class="team">${match.awayTeam.shortName} <img src="${match.awayTeam.crest}" class="crest-sm"></div></div>`).join(''); }
+function renderFixtures(m, g) { UI.fixtures.innerHTML = `<div class="gw-label">Next GW ${g}</div>` + m.map(match => `<div class="item"><div class="team"><img src="${match.homeTeam.crest}" class="crest-sm"> ${match.homeTeam.shortName}</div><span class="date">${new Date(match.utcDate).toLocaleDateString([], {day:'numeric', month:'short'})}</span><div class="team">${match.awayTeam.shortName} <img src="${match.awayTeam.crest}" class="crest-sm"></div></div>`).join(''); }
+function renderStandings(d) { UI.standings.innerHTML = d.map(r => `<tr><td>${r.position}</td><td class="team-cell"><img src="${r.team.crest}" class="crest-sm">${r.team.shortName}</td><td>${r.points}</td></tr>`).join(''); }
 window.closeVideo = () => { UI.modal.style.display = 'none'; UI.player.innerHTML = ""; };
 
 init();
