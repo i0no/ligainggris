@@ -4,9 +4,13 @@ const UI = {
     fixtures: document.getElementById('fixtures-root'),
     videos: document.getElementById('video-root'),
     news: document.getElementById('news-root'),
+    pager: document.getElementById('video-pager-dots'),
     modal: document.getElementById('video-modal'),
     player: document.getElementById('video-player')
 };
+
+let allMatches = [];
+const PAGE_SIZE = 6;
 
 async function init() {
     try {
@@ -22,30 +26,39 @@ async function init() {
 
         if (r.matches) {
             const maxGW = Math.max(...r.matches.map(m => m.matchday));
-            const latestMatches = r.matches.filter(m => m.matchday === maxGW);
-            renderResults(latestMatches, maxGW);
-
-            // Load the first 6 videos only
-            loadHighlights(latestMatches.slice(0, 6));
+            allMatches = r.matches.filter(m => m.matchday === maxGW);
+            renderResults(allMatches, maxGW);
+            showPage(0);
         }
 
         if (f.matches) {
             const nextGW = Math.min(...f.matches.map(m => m.matchday));
             renderFixtures(f.matches.filter(m => m.matchday === nextGW), nextGW);
         }
-    } catch (e) { console.error("Load failed", e); }
+    } catch (e) { console.error(e); }
 }
 
-async function loadHighlights(matches) {
-    UI.videos.innerHTML = "";
-    for (const m of matches) {
-        const q = `${m.homeTeam.shortName} vs ${m.awayTeam.shortName}`;
-        try {
-            const res = await fetch(`/api/football?type=highlights&q=${encodeURIComponent(q)}`);
-            const data = await res.json();
-            if (data && data[0]) renderVideoCard(data[0]);
-        } catch (err) { console.error("Error fetching video", q); }
+async function showPage(idx) {
+    UI.videos.innerHTML = `<div class="loader">LOADING...</div>`;
+
+    // Pagination Dots
+    const totalPages = Math.ceil(allMatches.length / PAGE_SIZE);
+    UI.pager.innerHTML = "";
+    for (let i = 0; i < totalPages; i++) {
+        const dot = document.createElement('span');
+        dot.className = i === idx ? "active" : "";
+        dot.onclick = () => showPage(i);
+        UI.pager.appendChild(dot);
     }
+
+    const matches = allMatches.slice(idx * PAGE_SIZE, (idx + 1) * PAGE_SIZE);
+    const results = await Promise.all(matches.map(m => {
+        const q = `${m.homeTeam.shortName} vs ${m.awayTeam.shortName}`;
+        return fetch(`/api/football?type=highlights&q=${encodeURIComponent(q)}`).then(res => res.json());
+    }));
+
+    UI.videos.innerHTML = "";
+    results.forEach(data => { if (data && data[0]) renderVideoCard(data[0]); });
 }
 
 function renderVideoCard(v) {
@@ -75,8 +88,7 @@ function renderFixtures(m, g) {
 }
 
 function renderNews(news) {
-    UI.news.innerHTML = `<div class="section-title">Latest News</div>` +
-    news.slice(0, 8).map(item => `<a href="${item.link}" target="_blank" class="news-item"><div class="news-meta">SKY SPORTS</div><div class="news-title">${item.title}</div></a>`).join('');
+    UI.news.innerHTML = `<div class="section-title">News</div>` + news.slice(0, 8).map(item => `<a href="${item.link}" target="_blank" class="news-item"><div class="news-meta">SKY SPORTS</div><div class="news-title">${item.title}</div></a>`).join('');
 }
 
 window.closeVideo = () => { UI.modal.style.display = 'none'; UI.player.innerHTML = ""; };
