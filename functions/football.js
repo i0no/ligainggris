@@ -6,11 +6,20 @@ exports.handler = async (event) => {
     try {
         let data;
         if (type === 'highlights') {
-            // Fetching from Official Premier League & Sky Sports IDs
-            const ytUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=6&order=date&type=video&q=Premier+League+Official+Highlights&key=${YT_KEY}`;
+            // channelId: UCNAf1k0yIjyGu3k9BwAg3lg is Sky Sports Premier League
+            // This ensures ONLY their uploads appear.
+            const channelId = "UCNAf1k0yIjyGu3k9BwAg3lg";
+            const query = encodeURIComponent("Premier League Highlights");
+            const ytUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=6&order=date&type=video&q=${query}&key=${YT_KEY}`;
+
             const res = await fetch(ytUrl);
             const ytData = await res.json();
-            data = ytData.items || [];
+
+            return {
+                statusCode: 200,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(ytData.items || [])
+            };
         } else {
             const ENDPOINTS = {
                 standings: 'https://api.football-data.org/v4/competitions/PL/standings',
