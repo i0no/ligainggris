@@ -21,8 +21,6 @@ async function init() {
             const maxGW = Math.max(...r.matches.map(m => m.matchday));
             const latestMatches = r.matches.filter(m => m.matchday === maxGW);
             renderResults(latestMatches, maxGW);
-
-            // Trigger specific video searches based on the results found
             fetchMatchHighlights(latestMatches);
         }
 
@@ -30,20 +28,20 @@ async function init() {
             const nextGW = Math.min(...f.matches.map(m => m.matchday));
             renderFixtures(f.matches.filter(m => m.matchday === nextGW), nextGW);
         }
-    } catch (e) { console.error("Initialization failed", e); }
+    } catch (e) { console.error("Init failed", e); }
 }
 
 async function fetchMatchHighlights(matches) {
-    UI.videos.innerHTML = `<p style="grid-column: 1/-1; color: #888;">Finding match highlights...</p>`;
-    const topMatches = matches.slice(0, 6); // Limit to 6 to save API quota
+    UI.videos.innerHTML = `<p style="grid-column:1/-1; color:#888; font-size:0.8rem;">Fetching unblocked highlights...</p>`;
+    const topMatches = matches.slice(0, 6);
 
     const videoRequests = topMatches.map(match => {
-        const term = `${match.homeTeam.name} vs ${match.awayTeam.name} highlights 2026`;
+        const term = `${match.homeTeam.name} vs ${match.awayTeam.name}`;
         return fetch(`/api/football?type=highlights&q=${encodeURIComponent(term)}`).then(res => res.json());
     });
 
     const videoResults = await Promise.all(videoRequests);
-    UI.videos.innerHTML = ""; // Clear loader
+    UI.videos.innerHTML = "";
 
     videoResults.forEach(items => {
         if (items && items.length > 0) renderVideoCard(items[0]);
@@ -54,7 +52,8 @@ function renderVideoCard(v) {
     const div = document.createElement('div');
     div.className = 'v-card';
     div.onclick = () => {
-        UI.player.innerHTML = `<iframe src="https://www.youtube.com/embed/${v.id.videoId}?autoplay=1" allowfullscreen></iframe>`;
+        // PIPED PROXY TO BYPASS GEO-BLOCKING
+        UI.player.innerHTML = `<iframe src="https://piped.video/embed/${v.id.videoId}?autoplay=1" allowfullscreen></iframe>`;
         UI.modal.style.display = 'flex';
     };
     div.innerHTML = `
@@ -76,7 +75,7 @@ function renderResults(matches, gw) {
 }
 
 function renderFixtures(matches, gw) {
-    UI.fixtures.innerHTML = `<div class="gw-label">Upcoming: Gameweek ${gw}</div>` +
+    UI.fixtures.innerHTML = `<div class="gw-label">Upcoming GW ${gw}</div>` +
     matches.map(m => `
     <div class="item">
     <div class="team"><img src="${m.homeTeam.crest}" class="crest-sm"> ${m.homeTeam.shortName}</div>
