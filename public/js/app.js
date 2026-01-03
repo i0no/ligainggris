@@ -1,101 +1,56 @@
-const UI = {
-    standings: document.getElementById('standings-root'),
-    matches: document.getElementById('matches-root'),
-    highlights: document.getElementById('highlights-root'),
-    status: document.getElementById('sync-status'),
-    modal: document.getElementById('video-modal'),
-    player: document.getElementById('video-player')
-};
+async function init() {
+    const [sRes, rRes, hRes] = await Promise.all([
+        fetch('/api/football?type=standings'),
+                                                 fetch('/api/football?type=results'),
+                                                 fetch('https://www.scorebat.com/video-api/v3/')
+    ]);
 
-async function initDashboard() {
-    try {
-        const [standingsRes, matchesRes, highlightsRes] = await Promise.all([
-            fetch('/api/football?type=standings'),
-                                                                            fetch('/api/football?type=matches'),
-                                                                            fetch('https://www.scorebat.com/video-api/v3/')
-        ]);
+    const standings = await sRes.json();
+    const results = await rRes.json();
+    const highlights = await hRes.json();
 
-        const standingsData = await standingsRes.json();
-        const matchesData = await matchesRes.json();
-        const highlightsData = await highlightsRes.json();
-
-        renderStandings(standingsData.standings[0].table);
-        renderMatches(matchesData.matches);
-        renderHighlights(highlightsData.response);
-
-        UI.status.innerText = "Sync Active";
-    } catch (err) {
-        console.error(err);
-        UI.status.innerText = "Sync Error";
-    }
-}
-
-function renderHighlights(response) {
-    // Increased slice to 8 to show more clubs
-    const pl = response.filter(item => item.competition === "ENGLAND: Premier League").slice(0, 8);
-
-    UI.highlights.innerHTML = pl.map((m, index) => {
-        // Find the first video embed available
-        const embedCode = m.videos && m.videos[0] ? m.videos[0].embed : '';
-        // Escape quotes for the onclick function
-        const safeEmbed = btoa(embedCode);
-
-        return `
-        <div class="video-card" onclick="openVideo('${safeEmbed}')">
-        <img src="${m.thumbnail}" alt="${m.title}">
-        <div class="video-overlay">
-        <div style="color:var(--brand-accent); font-weight:800; font-size:1.2rem; margin-bottom:5px;">▶</div>
-        <div class="video-title" style="color:white; font-size:0.8rem; font-weight:600;">${m.title}</div>
-        </div>
-        </div>
-        `;
-    }).join('');
-}
-
-window.openVideo = (encodedEmbed) => {
-    const embedCode = atob(encodedEmbed);
-    if (!embedCode) return alert("Video not available");
-
-    // Inject the actual iframe code into the player div
-    UI.player.innerHTML = embedCode;
-    UI.modal.style.display = "flex";
-    document.body.style.overflow = "hidden"; // Prevent scrolling
-};
-
-// Existing modal close logic
-document.querySelector('.close-modal').onclick = closeModal;
-UI.modal.onclick = (e) => { if(e.target === UI.modal) closeModal(); };
-
-function closeModal() {
-    UI.modal.style.display = "none";
-    UI.player.innerHTML = "";
-    document.body.style.overflow = "auto";
+    renderStandings(standings.standings[0].table);
+    renderResults(results.matches);
+    renderHighlights(highlights.response);
 }
 
 function renderStandings(data) {
-    UI.standings.innerHTML = data.slice(0, 20).map(row => `
+    const html = data.slice(0, 10).map(row => `
     <tr>
     <td>${row.position}</td>
-    <td>
-    <div class="team-info">
-    <img src="${row.team.crest}" class="crest" width="24">
-    <span>${row.team.shortName}</span>
-    </div>
-    </td>
-    <td>${row.playedGames}</td>
-    <td>${row.goalDifference}</td>
+    <td><img src="${row.team.crest}" class="crest-sm">${row.team.shortName}</td>
     <td><strong>${row.points}</strong></td>
     </tr>
     `).join('');
+    document.getElementById('standings-root').innerHTML = html;
 }
 
-function renderMatches(data) {
-    UI.matches.innerHTML = data.slice(0, 5).map(m => `
-    <div class="fixture-card" style="padding:15px; border-bottom:1px solid #eee;">
-    <div style="font-size:0.7rem; color:var(--brand-secondary); font-weight:700;">${new Date(m.utcDate).toLocaleDateString()}</div>
-    <div style="font-weight:700; color:var(--brand-primary);">${m.homeTeam.shortName} vs ${m.awayTeam.shortName}</div>
+function renderResults(matches) {
+    // Show last 8 results
+    const html = matches.reverse().slice(0, 8).map(m => `
+    <div class="result-item">
+    <span>${m.homeTeam.shortName}</span>
+    <span class="score">${m.score.fullTime.home} - ${m.score.fullTime.away}</span>
+    <span>${m.awayTeam.shortName}</span>
     </div>
     `).join('');
+    document.getElementById('results-root').innerHTML = html;
 }
 
-document.addEventListener('DOMContentLoaded', initDashboard);
+function renderHighlights(videos) {
+    const pl = videos.filter(v => v.competition === "ENGLAND: Premier League").slice(0, 6);
+    const html = pl.map(v => `
+    <div class="v-card" onclick="playVideo('${btoa(v.videos[0].embed)}', '${v.url}')">
+    <img src="${v.thumbnail}">
+    <div class="v-title">${v.title}</div>
+    </div>
+    `).join('');
+    document.getElementById('video-root').innerHTML = html;
+}
+
+window.playVideo = (embed, fallbackUrl) => {
+    const code = atob(embed);
+    document.getElementById('video-player').innerHTML = code +
+    `<br><a href="${fallbackUrl}" target="_blank" style="color:white; display:block; margin-top:10px; text-align:center;">Video not loading? Watch on Source</a>`;
+    document.getElementById('video-modal').style.display = 'flex';
+};
