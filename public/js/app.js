@@ -9,13 +9,14 @@ const UI = {
 
 // Switching to Invidious instances for better stability against black screens
 const INSTANCES = [
+"inv.perditum.com",
     // "https://yewtu.be",
 "https://vid.puffyan.us",
 "https://inv.vern.cc",
 "https://invidious.nerdvpn.de"
 ];
 
-let bestInstance = "https://yewtu.be";
+let bestInstance = "inv.perditum.com";
 
 async function checkServerHealth() {
     // We race the servers to find the one that responds fastest
