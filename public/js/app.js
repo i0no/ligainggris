@@ -7,29 +7,8 @@ const UI = {
     player: document.getElementById('video-player')
 };
 
-/**
- * Professional Skeleton Loaders
- */
-const showSkeletons = () => {
-    UI.standings.innerHTML = Array(10).fill(0).map(() => `
-    <tr><td colspan="5"><div class="skeleton" style="height:25px; margin:5px 0"></div></td></tr>
-    `).join('');
-    UI.matches.innerHTML = Array(4).fill(0).map(() => `
-    <div class="skeleton" style="height:60px; border-radius:12px; margin-bottom:10px"></div>
-    `).join('');
-    UI.highlights.innerHTML = Array(3).fill(0).map(() => `
-    <div class="skeleton" style="height:150px; border-radius:16px"></div>
-    `).join('');
-};
-
-/**
- * Data Fetching Logic
- */
 async function initDashboard() {
-    showSkeletons();
-
     try {
-        // Run all API calls in parallel for speed
         const [standingsRes, matchesRes, highlightsRes] = await Promise.all([
             fetch('/api/football?type=standings'),
                                                                             fetch('/api/football?type=matches'),
@@ -44,20 +23,62 @@ async function initDashboard() {
         renderMatches(matchesData.matches);
         renderHighlights(highlightsData.response);
 
-        UI.status.innerText = `Updated: ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+        UI.status.innerText = "Sync Active";
     } catch (err) {
-        UI.status.innerText = "Sync Failed";
-        console.error("Dashboard Error:", err);
+        console.error(err);
+        UI.status.innerText = "Sync Error";
     }
 }
 
+function renderHighlights(response) {
+    // Increased slice to 8 to show more clubs
+    const pl = response.filter(item => item.competition === "ENGLAND: Premier League").slice(0, 8);
+
+    UI.highlights.innerHTML = pl.map((m, index) => {
+        // Find the first video embed available
+        const embedCode = m.videos && m.videos[0] ? m.videos[0].embed : '';
+        // Escape quotes for the onclick function
+        const safeEmbed = btoa(embedCode);
+
+        return `
+        <div class="video-card" onclick="openVideo('${safeEmbed}')">
+        <img src="${m.thumbnail}" alt="${m.title}">
+        <div class="video-overlay">
+        <div style="color:var(--brand-accent); font-weight:800; font-size:1.2rem; margin-bottom:5px;">▶</div>
+        <div class="video-title" style="color:white; font-size:0.8rem; font-weight:600;">${m.title}</div>
+        </div>
+        </div>
+        `;
+    }).join('');
+}
+
+window.openVideo = (encodedEmbed) => {
+    const embedCode = atob(encodedEmbed);
+    if (!embedCode) return alert("Video not available");
+
+    // Inject the actual iframe code into the player div
+    UI.player.innerHTML = embedCode;
+    UI.modal.style.display = "flex";
+    document.body.style.overflow = "hidden"; // Prevent scrolling
+};
+
+// Existing modal close logic
+document.querySelector('.close-modal').onclick = closeModal;
+UI.modal.onclick = (e) => { if(e.target === UI.modal) closeModal(); };
+
+function closeModal() {
+    UI.modal.style.display = "none";
+    UI.player.innerHTML = "";
+    document.body.style.overflow = "auto";
+}
+
 function renderStandings(data) {
-    UI.standings.innerHTML = data.slice(0, 10).map(row => `
+    UI.standings.innerHTML = data.slice(0, 20).map(row => `
     <tr>
     <td>${row.position}</td>
     <td>
     <div class="team-info">
-    <img src="${row.team.crest}" class="crest" loading="lazy">
+    <img src="${row.team.crest}" class="crest" width="24">
     <span>${row.team.shortName}</span>
     </div>
     </td>
@@ -69,58 +90,12 @@ function renderStandings(data) {
 }
 
 function renderMatches(data) {
-    const nextMatches = data.slice(0, 4);
-    UI.matches.innerHTML = nextMatches.map(m => `
-    <div class="fixture-card">
-    <div class="fixture-date">${new Date(m.utcDate).toLocaleDateString('en-GB', {weekday:'short', day:'numeric'})} • ${new Date(m.utcDate).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-    <div class="fixture-teams">
-    <span>${m.homeTeam.name}</span>
-    <span class="vs">vs</span>
-    <span>${m.awayTeam.name}</span>
-    </div>
+    UI.matches.innerHTML = data.slice(0, 5).map(m => `
+    <div class="fixture-card" style="padding:15px; border-bottom:1px solid #eee;">
+    <div style="font-size:0.7rem; color:var(--brand-secondary); font-weight:700;">${new Date(m.utcDate).toLocaleDateString()}</div>
+    <div style="font-weight:700; color:var(--brand-primary);">${m.homeTeam.shortName} vs ${m.awayTeam.shortName}</div>
     </div>
     `).join('');
 }
-
-function renderHighlights(response) {
-    // Filter for Premier League only
-    const pl = response.filter(item => item.competition === "ENGLAND: Premier League").slice(0, 3);
-
-    if (pl.length === 0) {
-        UI.highlights.innerHTML = "<p style='grid-column:1/-1; text-align:center; color:#888;'>No recent highlights found.</p>";
-        return;
-    }
-
-    UI.highlights.innerHTML = pl.map(m => `
-    <div class="video-card" onclick="openVideo('${btoa(m.videos[0].embed)}')">
-    <img src="${m.thumbnail}" alt="${m.title}">
-    <div class="video-overlay">
-    <span class="play-icon">▶</span>
-    <div class="video-title">${m.title}</div>
-    </div>
-    </div>
-    `).join('');
-}
-
-/**
- * Video Modal Logic
- */
-window.openVideo = (encodedEmbed) => {
-    const embedCode = atob(encodedEmbed);
-    UI.player.innerHTML = embedCode;
-    UI.modal.style.display = "flex";
-};
-
-document.querySelector('.close-modal').onclick = () => {
-    UI.modal.style.display = "none";
-    UI.player.innerHTML = ""; // Stop video playback
-};
-
-window.onclick = (event) => {
-    if (event.target == UI.modal) {
-        UI.modal.style.display = "none";
-        UI.player.innerHTML = "";
-    }
-};
 
 document.addEventListener('DOMContentLoaded', initDashboard);
