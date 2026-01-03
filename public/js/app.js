@@ -18,22 +18,24 @@ async function init() {
 
         if (s.standings) renderStandings(s.standings[0].table);
 
-        // 1. LATEST RESULTS (Highest completed matchday)
+        // 1. LATEST COMPLETED GAMEWEEK
         if (r.matches && r.matches.length > 0) {
-            const lastGW = Math.max(...r.matches.map(m => m.matchday));
-            const latestResults = r.matches.filter(m => m.matchday === lastGW);
-            renderResults(latestResults, lastGW);
+            const maxGW = Math.max(...r.matches.map(m => m.matchday));
+            const latestRes = r.matches.filter(m => m.matchday === maxGW);
+            renderResults(latestRes, maxGW);
         }
 
-        // 2. NEXT FIXTURES (Lowest scheduled matchday)
+        // 2. NEXT UPCOMING GAMEWEEK
         if (f.matches && f.matches.length > 0) {
             const nextGW = Math.min(...f.matches.map(m => m.matchday));
-            const nextFixtures = f.matches.filter(m => m.matchday === nextGW);
-            renderFixtures(nextFixtures, nextGW);
+            const upcoming = f.matches.filter(m => m.matchday === nextGW);
+            renderFixtures(upcoming, nextGW);
         }
 
-        if (v.response) renderVideos(v.response);
-    } catch (e) { console.error("Init Error:", e); }
+        // 3. YOUTUBE HIGHLIGHTS
+        if (v && v.length > 0) renderVideos(v);
+
+    } catch (e) { console.error("Load failed", e); }
 }
 
 function renderResults(matches, gw) {
@@ -41,18 +43,18 @@ function renderResults(matches, gw) {
     matches.map(m => `
     <div class="item">
     <div class="team"><img src="${m.homeTeam.crest}" class="crest-sm"> ${m.homeTeam.shortName}</div>
-    <span class="score">${m.score.fullTime.home} - ${m.score.fullTime.away}</span>
+    <span class="score">${m.score.fullTime.home}-${m.score.fullTime.away}</span>
     <div class="team">${m.awayTeam.shortName} <img src="${m.awayTeam.crest}" class="crest-sm"></div>
     </div>
     `).join('');
 }
 
 function renderFixtures(matches, gw) {
-    UI.fixtures.innerHTML = `<div class="gw-label">Gameweek ${gw} Fixtures</div>` +
+    UI.fixtures.innerHTML = `<div class="gw-label">Next: Gameweek ${gw}</div>` +
     matches.map(m => `
-    <div class="item fixture">
+    <div class="item">
     <div class="team"><img src="${m.homeTeam.crest}" class="crest-sm"> ${m.homeTeam.shortName}</div>
-    <span class="date">${new Date(m.utcDate).toLocaleDateString([], {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</span>
+    <span class="date">${new Date(m.utcDate).toLocaleDateString([], {day:'numeric', month:'short'})}</span>
     <div class="team">${m.awayTeam.shortName} <img src="${m.awayTeam.crest}" class="crest-sm"></div>
     </div>
     `).join('');
@@ -69,21 +71,16 @@ function renderStandings(data) {
 }
 
 function renderVideos(videos) {
-    // Filter by 'Premier League' and ensure we only get the latest 6 for speed
-    const pl = videos.filter(v => v.competition.toUpperCase().includes("PREMIER LEAGUE")).slice(0, 6);
-    UI.videos.innerHTML = pl.map(v => `
-    <div class="v-card" onclick="playVideo('${btoa(v.videos[0].embed)}')">
-    <img src="${v.thumbnail}" loading="lazy">
-    <div class="v-overlay">
-    <span class="play-btn">▶</span>
-    <div class="v-title">${v.title}</div>
-    </div>
+    UI.videos.innerHTML = videos.map(v => `
+    <div class="v-card" onclick="playYT('${v.id.videoId}')">
+    <img src="${v.snippet.thumbnails.high.url}" loading="lazy">
+    <div class="v-title">${v.snippet.title}</div>
     </div>
     `).join('');
 }
 
-window.playVideo = (b64) => {
-    UI.player.innerHTML = atob(b64);
+window.playYT = (id) => {
+    UI.player.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
     UI.modal.style.display = 'flex';
 };
 
