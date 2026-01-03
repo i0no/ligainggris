@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPL Pro Dashboard | Real-time Stats</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+</head>
+<body>
+
+<div class="container">
+    <header class="dashboard-header">
+        <div class="logo-area">
+            <h1>Premier Dash</h1>
+            <p style="margin:0; color:#888; font-size:0.85rem">Official League Data Hub</p>
+        </div>
+        <div id="sync-status" class="sync-pill">Updating...</div>
+    </header>
+
+    <main class="db-grid">
+        <section class="card">
+            <div class="section-title">League Table</div>
+            <div class="table-wrapper">
+                <table id="table-main">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Club</th>
+                            <th>P</th>
+                            <th>GD</th>
+                            <th>Pts</th>
+                        </tr>
+                    </thead>
+                    <tbody id="standings-root">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+
+        <aside>
+            <div class="card">
+                <div class="section-title">Upcoming Fixtures</div>
+                <div id="matches-root"></div>
+            </div>
+            
+            <div class="card" style="margin-top: 1.5rem; background: var(--brand-primary); color: white;">
+                <p style="margin:0; opacity:0.8; font-size:0.8rem">Developer Access</p>
+                <h4 style="margin:5px 0 15px 0">Open Source API</h4>
+                <a href="https://github.com/i0no/sholatdulu" style="color:var(--brand-accent); text-decoration:none; font-weight:bold; font-size:0.9rem">View Documentation →</a>
+            </div>
+        </aside>
+    </main>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
