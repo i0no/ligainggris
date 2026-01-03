@@ -18,24 +18,28 @@ async function init() {
 
         if (s.standings) renderStandings(s.standings[0].table);
 
-        // 1. LATEST COMPLETED GAMEWEEK
         if (r.matches && r.matches.length > 0) {
             const maxGW = Math.max(...r.matches.map(m => m.matchday));
             const latestRes = r.matches.filter(m => m.matchday === maxGW);
             renderResults(latestRes, maxGW);
         }
 
-        // 2. NEXT UPCOMING GAMEWEEK
         if (f.matches && f.matches.length > 0) {
             const nextGW = Math.min(...f.matches.map(m => m.matchday));
             const upcoming = f.matches.filter(m => m.matchday === nextGW);
             renderFixtures(upcoming, nextGW);
         }
 
-        // 3. YOUTUBE HIGHLIGHTS
-        if (v && v.length > 0) renderVideos(v);
+        // VIDEO ERROR HANDLING
+        if (v.error) {
+            UI.videos.innerHTML = `<p style="color:red; font-size:0.7rem;">YouTube Error: ${v.error}</p>`;
+        } else if (v && v.length > 0) {
+            renderVideos(v);
+        } else {
+            UI.videos.innerHTML = `<p style="color:#888; font-size:0.7rem;">No videos found. Check API key.</p>`;
+        }
 
-    } catch (e) { console.error("Load failed", e); }
+    } catch (e) { console.error("Init Error:", e); }
 }
 
 function renderResults(matches, gw) {
@@ -73,14 +77,14 @@ function renderStandings(data) {
 function renderVideos(videos) {
     UI.videos.innerHTML = videos.map(v => `
     <div class="v-card" onclick="playYT('${v.id.videoId}')">
-    <img src="${v.snippet.thumbnails.high.url}" loading="lazy">
+    <img src="${v.snippet.thumbnails.high.url}">
     <div class="v-title">${v.snippet.title}</div>
     </div>
     `).join('');
 }
 
 window.playYT = (id) => {
-    UI.player.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+    UI.player.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1" allowfullscreen></iframe>`;
     UI.modal.style.display = 'flex';
 };
 
