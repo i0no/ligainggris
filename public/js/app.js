@@ -28,8 +28,6 @@ async function init() {
             const maxGW = Math.max(...r.matches.map(m => m.matchday));
             allMatches = r.matches.filter(m => m.matchday === maxGW);
             renderResults(allMatches, maxGW);
-
-            // Start at page 0
             showPage(0);
         }
 
@@ -37,36 +35,30 @@ async function init() {
             const nextGW = Math.min(...f.matches.map(m => m.matchday));
             renderFixtures(f.matches.filter(m => m.matchday === nextGW), nextGW);
         }
-    } catch (e) { console.error("Init failed", e); }
+    } catch (e) { console.error(e); }
 }
 
-async function showPage(pageIdx) {
-    // 1. Clear Grid and Show Loader
-    UI.videos.innerHTML = `<div class="loader">Loading...</div>`;
+async function showPage(idx) {
+    UI.videos.innerHTML = `<div class="loader">LOADING...</div>`;
 
-    // 2. Setup Pagination UI
+    // Pagination Dots
     const totalPages = Math.ceil(allMatches.length / PAGE_SIZE);
     UI.pager.innerHTML = "";
     for (let i = 0; i < totalPages; i++) {
         const dot = document.createElement('span');
-        dot.className = i === pageIdx ? "active" : "";
+        dot.className = i === idx ? "active" : "";
         dot.onclick = () => showPage(i);
         UI.pager.appendChild(dot);
     }
 
-    // 3. Fetch current page slice
-    const pageMatches = allMatches.slice(pageIdx * PAGE_SIZE, (pageIdx + 1) * PAGE_SIZE);
-
-    // 4. Fetch and render
-    const results = await Promise.all(pageMatches.map(m => {
+    const matches = allMatches.slice(idx * PAGE_SIZE, (idx + 1) * PAGE_SIZE);
+    const results = await Promise.all(matches.map(m => {
         const q = `${m.homeTeam.shortName} vs ${m.awayTeam.shortName}`;
         return fetch(`/api/football?type=highlights&q=${encodeURIComponent(q)}`).then(res => res.json());
     }));
 
     UI.videos.innerHTML = "";
-    results.forEach(data => {
-        if (data && data[0]) renderVideoCard(data[0]);
-    });
+    results.forEach(data => { if (data && data[0]) renderVideoCard(data[0]); });
 }
 
 function renderVideoCard(v) {
@@ -80,19 +72,24 @@ function renderVideoCard(v) {
     UI.videos.appendChild(div);
 }
 
-function renderNews(news) {
-    UI.news.innerHTML = news.slice(0, 10).map(item => `
-    <a href="${item.link}" target="_blank" class="news-item">
-    <div class="news-meta">UK SPORTS NEWS</div>
-    <div class="news-title">${item.title}</div>
-    </a>
-    `).join('');
+function renderResults(m, g) {
+    UI.results.innerHTML = `<div class="section-title">Results GW ${g}</div>` +
+    m.map(match => `<div class="item"><div class="team"><img src="${match.homeTeam.crest}" class="crest-sm"> ${match.homeTeam.shortName}</div><span class="score">${match.score.fullTime.home}-${match.score.fullTime.away}</span><div class="team">${match.awayTeam.shortName} <img src="${match.awayTeam.crest}" class="crest-sm"></div></div>`).join('');
 }
 
-// Keep your existing renderResults, renderFixtures, renderStandings, closeVideo functions below
-function renderResults(m, g) { UI.results.innerHTML = `<div class="gw-label">GW ${g} Results</div>` + m.map(match => `<div class="item"><div class="team">${match.homeTeam.shortName}</div><span class="score">${match.score.fullTime.home}-${match.score.fullTime.away}</span><div class="team">${match.awayTeam.shortName}</div></div>`).join(''); }
-function renderFixtures(m, g) { UI.fixtures.innerHTML = `<div class="gw-label">Next GW ${g}</div>` + m.map(match => `<div class="item"><div class="team">${match.homeTeam.shortName}</div><span class="date">${new Date(match.utcDate).toLocaleDateString()}</span><div class="team">${match.awayTeam.shortName}</div></div>`).join(''); }
-function renderStandings(d) { UI.standings.innerHTML = `<table>` + d.map(r => `<tr><td>${r.position}</td><td>${r.team.shortName}</td><td>${r.points}</td></tr>`).join('') + `</table>`; }
-window.closeVideo = () => { UI.modal.style.display = 'none'; UI.player.innerHTML = ""; };
+function renderStandings(data) {
+    UI.standings.innerHTML = `<div class="section-title">Table</div><table class="mini-table">` +
+    data.map(r => `<tr><td>${r.position}</td><td class="team"><img src="${r.team.crest}" class="crest-sm"> ${r.team.shortName}</td><td>${r.points}</td></tr>`).join('') + `</table>`;
+}
 
+function renderFixtures(m, g) {
+    UI.fixtures.innerHTML = `<div class="section-title">Next GW ${g}</div>` +
+    m.map(match => `<div class="item"><div class="team"><img src="${match.homeTeam.crest}" class="crest-sm"> ${match.homeTeam.shortName}</div><div class="team">${match.awayTeam.shortName} <img src="${match.awayTeam.crest}" class="crest-sm"></div></div>`).join('');
+}
+
+function renderNews(news) {
+    UI.news.innerHTML = `<div class="section-title">News</div>` + news.slice(0, 8).map(item => `<a href="${item.link}" target="_blank" class="news-item"><div class="news-meta">SKY SPORTS</div><div class="news-title">${item.title}</div></a>`).join('');
+}
+
+window.closeVideo = () => { UI.modal.style.display = 'none'; UI.player.innerHTML = ""; };
 init();
