@@ -2,28 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PL HUB</title>
     <link rel="stylesheet" href="css/main.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <header><h1>PL HUB</h1></header>
         <div class="main-layout">
-            <aside class="side-col">
-                <div class="card">
-                    <div class="section-title">League Table</div>
-                    <table class="mini-table">
-                        <tbody id="standings-root"></tbody>
-                    </table>
-                </div>
-            </aside>
+            <aside class="side-col"><div class="card"><div id="standings-root"></div></div></aside>
 
             <main class="content-col">
                 <div class="card">
                     <div class="section-title">Match Highlights</div>
                     <div id="video-root" class="video-grid"></div>
+                    <div id="video-pager-dots" class="load-more-dots"></div>
                 </div>
                 <div class="card">
                     <div class="section-title">UK Sports News</div>
@@ -32,24 +23,12 @@
             </main>
 
             <aside class="side-col">
-                <div class="card">
-                    <div class="section-title">Latest Results</div>
-                    <div id="results-root"></div>
-                </div>
-                <div class="card">
-                    <div class="section-title">Upcoming</div>
-                    <div id="fixtures-root"></div>
-                </div>
+                <div class="card"><div id="results-root"></div></div>
+                <div class="card"><div id="fixtures-root"></div></div>
             </aside>
         </div>
     </div>
-
-    <div id="video-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeVideo()">&times;</span>
-            <div id="video-player"></div>
-        </div>
-    </div>
+    <div id="video-modal" class="modal"><div class="modal-content"><span onclick="closeVideo()">&times;</span><div id="video-player"></div></div></div>
     <script src="js/app.js"></script>
 </body>
 </html>
