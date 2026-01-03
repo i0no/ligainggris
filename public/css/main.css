@@ -105,3 +105,38 @@ td { padding: 1rem; border-bottom: 1px solid #f8f8f8; font-size: 0.95rem; }
 
 .fixture-date { font-size: 0.75rem; font-weight: 700; color: var(--brand-secondary); margin-bottom: 0.5rem; }
 .fixture-teams { font-weight: 700; display: flex; flex-direction: column; gap: 4px; }
+
+.highlights-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.video-card {
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+}
+
+.video-card img {
+    width: 100%;
+    height: auto;
+    opacity: 0.8;
+    transition: opacity 0.3s;
+}
+
+.video-card:hover img { opacity: 1; }
+
+.video-title {
+    position: absolute;
+    bottom: 0;
+    padding: 15px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.9));
+    color: white;
+    width: 100%;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
