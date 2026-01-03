@@ -5,31 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EPL Pro Hub</title>
     <link rel="stylesheet" href="css/main.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Premier Dash</h1>
-            <div id="sync-status">Connecting...</div>
-        </header>
+        <header><h1>Premier Dash</h1><div id="sync-status">● LIVE</div></header>
 
         <div class="main-layout">
             <aside class="card">
-                <div class="section-title">Standings</div>
+                <div class="section-title">Table</div>
                 <table class="mini-table">
-                    <thead><tr><th>#</th><th>Team</th><th>Pts</th></tr></thead>
                     <tbody id="standings-root"></tbody>
                 </table>
             </aside>
 
-            <section class="card">
-                <div class="section-title">Latest Match Highlights</div>
-                <div id="video-root" class="video-grid"></div>
+            <section>
+                <div class="card">
+                    <div class="section-title">Latest Highlights</div>
+                    <div id="video-root" class="video-grid"></div>
+                </div>
+                <div class="card" style="margin-top:20px">
+                    <div class="section-title">Upcoming Fixtures</div>
+                    <div id="fixtures-root" class="fixture-list"></div>
+                </div>
             </section>
 
             <aside class="card">
-                <div class="section-title">Latest Scores</div>
+                <div class="section-title">Recent Scores</div>
                 <div id="results-root"></div>
             </aside>
         </div>
@@ -37,7 +38,7 @@
 
     <div id="video-modal" class="modal">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
+            <span class="close-modal" onclick="closeVideo()">&times;</span>
             <div id="video-player"></div>
         </div>
     </div>
