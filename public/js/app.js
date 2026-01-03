@@ -7,33 +7,17 @@ const UI = {
     player: document.getElementById('video-player')
 };
 
-// Switching to Invidious instances for better stability against black screens
-const INSTANCES = [
-"inv.perditum.com",
-    // "https://yewtu.be",
-"https://vid.puffyan.us",
-"https://inv.vern.cc",
-"https://invidious.nerdvpn.de"
+// Mixed list of Invidious and Piped for better survival
+const SERVERS = [
+    { url: "https://yewtu.be", type: "invidious" },
+{ url: "https://vid.puffyan.us", type: "invidious" },
+{ url: "https://piped.projectsegfau.lt", type: "piped" },
+{ url: "https://inv.vern.cc", type: "invidious" }
 ];
 
-let bestInstance = "inv.perditum.com";
-
-async function checkServerHealth() {
-    // We race the servers to find the one that responds fastest
-    const checks = INSTANCES.map(url =>
-    fetch(url, { method: 'HEAD', mode: 'no-cors' })
-    .then(() => url)
-    .catch(() => null)
-    );
-
-    const results = await Promise.all(checks);
-    bestInstance = results.find(r => r !== null) || "https://yewtu.be";
-    console.log("Locked stable instance:", bestInstance);
-}
+let activeIndex = 0;
 
 async function init() {
-    await checkServerHealth();
-
     try {
         const [s, r, f] = await Promise.all([
             fetch('/api/football?type=standings').then(res => res.json()),
@@ -58,7 +42,7 @@ async function init() {
 }
 
 async function fetchMatchHighlights(matches) {
-    UI.videos.innerHTML = `<div class="loader">Fetching Highlights...</div>`;
+    UI.videos.innerHTML = `<div class="loader">Loading Match Highlights...</div>`;
     const topMatches = matches.slice(0, 6);
 
     const videoResults = await Promise.all(topMatches.map(match => {
@@ -75,11 +59,7 @@ async function fetchMatchHighlights(matches) {
 function renderVideoCard(v) {
     const div = document.createElement('div');
     div.className = 'v-card';
-    div.onclick = () => {
-        // Invidious uses /embed/ just like YouTube, but without the geo-blocks
-        UI.player.innerHTML = `<iframe src="${bestInstance}/embed/${v.id.videoId}?autoplay=1&local=true" allowfullscreen></iframe>`;
-        UI.modal.style.display = 'flex';
-    };
+    div.onclick = () => loadVideo(v.id.videoId);
     div.innerHTML = `
     <img src="${v.snippet.thumbnails.high.url}">
     <div class="v-title">${v.snippet.title}</div>
@@ -87,6 +67,29 @@ function renderVideoCard(v) {
     UI.videos.appendChild(div);
 }
 
+function loadVideo(id) {
+    const server = SERVERS[activeIndex];
+    // Invidious needs local=true, Piped doesn't.
+    const embedPath = server.type === "invidious" ? `/embed/${id}?local=true&autoplay=1` : `/embed/${id}?autoplay=1`;
+
+    UI.player.innerHTML = `
+    <div class="player-wrapper">
+    <iframe src="${server.url}${embedPath}" allowfullscreen></iframe>
+    <div class="server-status">
+    Current Server: ${server.url.split('//')[1]}
+    <button onclick="nextServer('${id}')">❌ Video Broken? Try Next Server</button>
+    </div>
+    </div>
+    `;
+    UI.modal.style.display = 'flex';
+}
+
+window.nextServer = (id) => {
+    activeIndex = (activeIndex + 1) % SERVERS.length;
+    loadVideo(id);
+};
+
+// --- DATA RENDERING (LOCKED) ---
 function renderResults(matches, gw) {
     UI.results.innerHTML = `<div class="gw-label">Gameweek ${gw} Results</div>` +
     matches.map(m => `
